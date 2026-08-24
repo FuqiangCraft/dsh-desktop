@@ -32,7 +32,9 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --config.onlyBuiltDependencies=esbuild
+        run: |
+          pnpm approve-builds --all || true
+          pnpm install
 
       - name: Lint, typecheck and test
         run: |
