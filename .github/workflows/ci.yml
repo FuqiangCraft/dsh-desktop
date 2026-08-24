@@ -20,6 +20,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux system dependencies for Tauri
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -34,7 +43,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --ignore-scripts
 
-      - name: Lint, typecheck and test
+      - name: Lint, typecheck and test Node packages
         run: |
           pnpm run lint
           pnpm run typecheck
@@ -45,3 +54,9 @@ jobs:
 
       - name: Verify bundle integrity
         run: pnpm run verify:bundle
+
+      - name: Check and test Tauri desktop shell
+        working-directory: packages/dsh-desktop-app/src-tauri
+        run: |
+          cargo check
+          cargo test

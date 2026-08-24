@@ -37,7 +37,6 @@ test('setupNotificationWatcher returns gracefully when window.Notification is ab
     globalThis.window = originalWindow
   }
 })
-
 test('notification state machine seeds baseline and avoids notifying pre-existing interactions', () => {
   const fired = []
 
@@ -116,6 +115,44 @@ test('notification state machine seeds baseline and avoids notifying pre-existin
     assert.equal(sessions.listenerCount(), 1)
     unsubscribe()
     assert.equal(sessions.listenerCount(), 0, 'Disposer must unwind store subscription')
+  } finally {
+    globalThis.window = originalWindow
+  }
+})
+
+test('notification watcher delegates to __DSH_DESKTOP_BRIDGE__ when available', () => {
+  const bridgeCalls = []
+  const originalWindow = globalThis.window
+  try {
+    globalThis.window = {
+      __DSH_DESKTOP_BRIDGE__: {
+        notify: (payload) => bridgeCalls.push(payload),
+      },
+    }
+
+    const sessions = createMockSessions({
+      ids: ['s1'],
+      byId: {
+        s1: { id: 's1', displayTitle: 'Initial Session', pendingInteraction: 'question' },
+      },
+    })
+
+    const unsubscribe = setupNotificationWatcher(sessions, (k) => zh[k] ?? k, () => {})
+
+    sessions.setState({
+      ids: ['s1', 's2'],
+      byId: {
+        s1: { id: 's1', displayTitle: 'Initial Session', pendingInteraction: 'question' },
+        s2: { id: 's2', displayTitle: 'Approval Session', pendingInteraction: 'approval' },
+      },
+    })
+
+    assert.equal(bridgeCalls.length, 1)
+    assert.equal(bridgeCalls[0].id, 's2')
+    assert.equal(bridgeCalls[0].title, 'Approval Session')
+    assert.equal(bridgeCalls[0].kind, 'approval')
+
+    unsubscribe()
   } finally {
     globalThis.window = originalWindow
   }
