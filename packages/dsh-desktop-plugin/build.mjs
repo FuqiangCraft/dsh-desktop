@@ -1,5 +1,5 @@
 /**
- * Single-file client + ESM host build for @dsh-community/dsh-desktop-plugin.
+ * Single-file client + ESM host build for @mixian/dsh-desktop-plugin.
  *
  * The web server serves exactly one file per plugin (/plugins/<id>/client.js),
  * so the client half is one CJS bundle wrapped in the ModuleLoader factory
@@ -17,7 +17,7 @@ const require = createRequire(import.meta.url)
 // Resolve tsc's JS entry so the build works on Windows (the .bin shim is a shell script).
 const tscBin = require.resolve('typescript/bin/tsc')
 
-const PKG = '@dsh-community/dsh-desktop-plugin'
+const PKG = '@mixian/dsh-desktop-plugin'
 const dshExternal = ['@deepseek-ai/cordis', '@deepseek-ai/dsh-*', '@deepseek-ai/schemastery']
 
 mkdirSync('lib', { recursive: true })

@@ -1,6 +1,6 @@
-# @dsh-community/dsh-desktop-plugin bundle patch: mount the host plugin under
+# @mixian/dsh-desktop-plugin bundle patch: mount the host plugin under
 # its package name, resolved through the profile's node_modules. The client
 # face is discovered from the same package's `dsh.client` declaration.
 - insert:
     - id: dsh-desktop-plugin
-      name: '@dsh-community/dsh-desktop-plugin'
+      name: '@mixian/dsh-desktop-plugin'

@@ -1,5 +1,5 @@
 /**
- * @dsh-community/dsh-desktop-plugin — browser half.
+ * @mixian/dsh-desktop-plugin — browser half.
  *
  * Registers the `desktop` dictionaries, the notification watcher (fires a
  * desktop notification when a session enters a pending interaction), and the

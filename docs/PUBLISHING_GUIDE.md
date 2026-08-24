@@ -1,4 +1,4 @@
-# @dsh-community/dsh-desktop-plugin 发布指南
+# @mixian/dsh-desktop-plugin 发布指南
 
 > 基于对真实 deepseek-harness 源码与 npm 生态的核对（2026-08）。**dsh 没有内置插件商店**：`ctx.pluginInventory` 只是只读的已加载插件清单。"市场"由社区注册表 + GitHub topic 组成。
 
@@ -6,7 +6,7 @@
 
 ```jsonc
 {
-  "name": "@dsh-community/dsh-desktop-plugin",
+  "name": "@mixian/dsh-desktop-plugin",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -33,7 +33,7 @@
    ```yaml
    - insert:
        - id: dsh-desktop-plugin
-         name: '@dsh-community/dsh-desktop-plugin'
+         name: '@mixian/dsh-desktop-plugin'
    ```
 5. `dsh.plugin.json` 为插件清单文件（注册表收录时用于识别）。
 
@@ -41,7 +41,7 @@
 
 ```sh
 # 推荐：装进 profile（会写入 profile 的 node_modules）
-dsh plugin --profile web add ./path/to/@dsh-community/dsh-desktop-plugin
+dsh plugin --profile web add @mixian/dsh-desktop-plugin
 
 # 或临时覆盖（不安装）
 dsh web --patch ./path/to/cordis.patch.yml
@@ -62,7 +62,7 @@ dsh web --patch ./path/to/cordis.patch.yml
 ## 五、构建与发布
 
 ```sh
-pnpm --filter @dsh-community/dsh-desktop-plugin build   # esbuild host+client + tsc 类型
+pnpm --filter @mixian/dsh-desktop-plugin build   # esbuild host+client + tsc 类型
 cd packages/dsh-desktop-plugin && npm pack --dry-run    # 检查 lib/*、cordis.patch.yml 等
 npm publish --access public
 ```

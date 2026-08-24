@@ -3,7 +3,7 @@ import z from '@deepseek-ai/schemastery'
 import { applyScreenCaptureTool } from './tool-screen-capture.ts'
 
 /** Cordis plugin name (the Loader entry and client bundle id). */
-export const name = '@dsh-community/dsh-desktop-plugin'
+export const name = '@mixian/dsh-desktop-plugin'
 
 /** Host plugin has no required service dependencies. */
 export const inject: readonly string[] = []

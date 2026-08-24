@@ -44,7 +44,7 @@ dsh plugin --profile web add ./packages/dsh-desktop-plugin
 ```sh
 pnpm install
 pnpm check
-pnpm --filter @dsh-community/dsh-desktop-plugin check
+pnpm --filter @mixian/dsh-desktop-plugin check
 ```
 
 详细发布步骤参见 [发布指南](docs/PUBLISHING_GUIDE.md)，架构调研与勘误参见 [架构分析](docs/ARCHITECTURE_ANALYSIS.md)。

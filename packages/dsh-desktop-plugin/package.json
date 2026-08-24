@@ -1,5 +1,5 @@
 {
-  "name": "@dsh-community/dsh-desktop-plugin",
+  "name": "@mixian/dsh-desktop-plugin",
   "version": "0.1.0",
   "description": "Desktop-grade DeepSeek Harness plugin: native notifications for user questions/approvals, a floating attention HUD, a screen-capture tool, and a multi-agent tiling canvas.",
   "author": "FuqiangCraft",

@@ -9,7 +9,7 @@
  * opts in explicitly. Even then, it only fires when the model decides to call
  * it (typically after the user asks for a screenshot), and the captured image
  * is surfaced back into the conversation for transparency. No hidden capture.
- * @module @dsh-community/dsh-desktop-plugin/src/tool-screen-capture
+ * @module @mixian/dsh-desktop-plugin/src/tool-screen-capture
  */
 
 import { execFile } from 'node:child_process'

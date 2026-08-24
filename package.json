@@ -6,13 +6,13 @@
   "type": "module",
   "scripts": {
     "build": "pnpm -r run build",
-    "dev:plugin": "pnpm --filter @dsh-community/dsh-desktop-plugin dev",
+    "dev:plugin": "pnpm --filter @mixian/dsh-desktop-plugin dev",
     "dev:app": "pnpm --filter @dsh-community/dsh-desktop-app dev",
     "dev:hud": "pnpm --filter @dsh-community/dsh-desktop-app dev:hud",
     "tauri": "pnpm --filter @dsh-community/dsh-desktop-app tauri",
     "lint": "oxlint --ignore-pattern '**/lib/**' --ignore-pattern '**/target/**' .",
     "typecheck": "pnpm -r --if-present run typecheck",
-    "check": "pnpm lint && pnpm typecheck && pnpm --filter @dsh-community/dsh-desktop-plugin build"
+    "check": "pnpm lint && pnpm typecheck && pnpm --filter @mixian/dsh-desktop-plugin build"
   },
   "keywords": [
     "deepseek",

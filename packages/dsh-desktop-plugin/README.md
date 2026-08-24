@@ -1,4 +1,4 @@
-# @dsh-community/dsh-desktop-plugin
+# @mixian/dsh-desktop-plugin
 
 ![DSH Desktop Plugin logo](assets/logo.png)
 
@@ -16,10 +16,10 @@ The plugin ships a dual-face Cordis bundle (`dsh.bundle` + `dsh.client`). Mount 
 
 ```sh
 # via a profile (recommended)
-dsh plugin --profile web add /path/to/@dsh-community/dsh-desktop-plugin
+dsh plugin --profile web add @mixian/dsh-desktop-plugin
 
 # or as a one-off overlay
-dsh web --patch /path/to/@dsh-community/dsh-desktop-plugin/cordis.patch.yml
+dsh web --patch /path/to/@mixian/dsh-desktop-plugin/cordis.patch.yml
 ```
 
 Enable the opt-in `screen_capture` tool by patching the row's config:
