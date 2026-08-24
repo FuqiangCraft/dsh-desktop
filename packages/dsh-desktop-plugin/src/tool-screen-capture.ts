@@ -63,18 +63,43 @@ export function captureCommand(
 }
 
 /** Capture the host's primary display to a temporary PNG file and return its bytes. */
-async function captureScreenPng(): Promise<Buffer> {
+export async function captureScreenPng(): Promise<Buffer> {
   const tempPath = join(tmpdir(), `dsh-screen-capture-${process.pid}.png`)
   try {
     const { command, args } = captureCommand(tempPath)
     try {
       await execFileAsync(command, args, { timeout: 15000 })
     } catch (error) {
-      // Linux fallback when `scrot` is not installed.
-      if (process.platform !== 'linux') throw error
-      await execFileAsync('gnome-screenshot', ['-f', tempPath], { timeout: 15000 })
+      if (process.platform === 'linux') {
+        try {
+          await execFileAsync('gnome-screenshot', ['-f', tempPath], { timeout: 15000 })
+        } catch {
+          throw new Error(
+            'screen_capture: neither "scrot" nor "gnome-screenshot" could be executed on Linux. Please install scrot or gnome-screenshot.',
+            { cause: error },
+          )
+        }
+      } else if (process.platform === 'darwin') {
+        throw new Error(
+          'screen_capture: failed to capture screen on macOS. Please ensure "Screen Recording" permission is granted.',
+          { cause: error },
+        )
+      } else if (process.platform === 'win32') {
+        throw new Error(
+          'screen_capture: failed to capture screen on Windows via PowerShell.',
+          { cause: error },
+        )
+      } else {
+        throw error
+      }
     }
-    return await readFile(tempPath)
+    const data = await readFile(tempPath).catch((err) => {
+      throw new Error(`screen_capture: screenshot file was not created at ${tempPath}`, { cause: err })
+    })
+    if (data.length === 0) {
+      throw new Error('screen_capture: captured screenshot file is empty (0 bytes)')
+    }
+    return data
   } finally {
     await unlink(tempPath).catch(() => {})
   }
