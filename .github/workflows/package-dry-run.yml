@@ -1,0 +1,38 @@
+name: Package Dry Run
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+jobs:
+  pack-check:
+    name: Verify NPM Packaging & Assets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --ignore-scripts
+
+      - name: Build plugin
+        run: pnpm --filter @mixian/dsh-desktop-plugin build
+
+      - name: Dry-run package creation
+        working-directory: packages/dsh-desktop-plugin
+        run: npm pack --dry-run
