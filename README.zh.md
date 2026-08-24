@@ -1,5 +1,10 @@
 # DeepSeek Harness Desktop
 
+[![CI](https://github.com/FuqiangCraft/dsh-desktop/actions/workflows/ci.yml/badge.svg)](https://github.com/FuqiangCraft/dsh-desktop/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@mixian/dsh-desktop-plugin.svg)](https://www.npmjs.com/package/@mixian/dsh-desktop-plugin)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）的桌面辅助插件与轻量 Tauri 外壳。
 
 [English](README.md) | 中文

@@ -1,6 +1,13 @@
 # DeepSeek Harness Desktop Pro
 
+[![CI](https://github.com/FuqiangCraft/dsh-desktop/actions/workflows/ci.yml/badge.svg)](https://github.com/FuqiangCraft/dsh-desktop/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@mixian/dsh-desktop-plugin.svg)](https://www.npmjs.com/package/@mixian/dsh-desktop-plugin)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Desktop-grade companion for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`).
+
+[English](README.md) | [中文](README.zh.md)
 
 **Status (2026-08):** the Cordis plugin is implemented and built against the published dsh APIs. A minimal Tauri shell is also implemented; advanced native features remain planned.
 
