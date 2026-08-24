@@ -3,7 +3,255 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DSH Desktop</title>
+    <title>DeepSeek Harness Desktop</title>
+    <style>
+      :root {
+        --bg-primary: #0e1117;
+        --bg-secondary: #161b22;
+        --bg-card: #21262d;
+        --bg-card-hover: #2b323c;
+        --border-color: rgba(240, 246, 252, 0.1);
+        --text-primary: #f0f6fc;
+        --text-secondary: #8b949e;
+        --accent-blue: #58a6ff;
+        --accent-indigo: #6366f1;
+        --accent-green: #3fb950;
+        --accent-amber: #d29922;
+        --accent-red: #f85149;
+        --radius-lg: 14px;
+        --radius-md: 8px;
+        --font-stack: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font-stack);
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        user-select: none;
+      }
+
+      /* -------------------------------------------------------------
+         Setup Wizard Style (Default View)
+         ------------------------------------------------------------- */
+      .wizard-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        max-width: 520px;
+        padding: 40px 32px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+      }
+
+      .logo-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
+        margin-bottom: 20px;
+      }
+
+      .logo-icon svg {
+        width: 32px;
+        height: 32px;
+        fill: white;
+      }
+
+      h1 {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+
+      p.subtitle {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+        margin-bottom: 24px;
+      }
+
+      .status-box {
+        width: 100%;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        margin-bottom: 24px;
+        text-align: left;
+      }
+
+      .status-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent-amber);
+        animation: pulse 2s infinite;
+      }
+
+      .status-message {
+        font-size: 12px;
+        color: var(--text-secondary);
+        line-height: 1.4;
+      }
+
+      .code-snippet {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+        font-size: 12px;
+        color: #e6edf3;
+        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .btn-group {
+        display: flex;
+        gap: 12px;
+        width: 100%;
+      }
+
+      .btn {
+        flex: 1;
+        padding: 10px 16px;
+        border-radius: var(--radius-md);
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .btn-primary {
+        background: var(--accent-indigo);
+        color: white;
+      }
+      .btn-primary:hover {
+        background: #4f46e5;
+      }
+
+      .btn-secondary {
+        background: var(--bg-card);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+      }
+      .btn-secondary:hover {
+        background: var(--bg-card-hover);
+      }
+
+      @keyframes pulse {
+        0% { opacity: 0.4; }
+        50% { opacity: 1; }
+        100% { opacity: 0.4; }
+      }
+    </style>
   </head>
-  <body></body>
+  <body>
+    <!-- Default Daemon Setup Wizard -->
+    <div class="wizard-container" id="wizardContainer">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+        </svg>
+      </div>
+      <h1>DeepSeek Harness Desktop</h1>
+      <p class="subtitle">
+        High-performance native companion for DeepSeek Harness.
+      </p>
+
+      <div class="status-box">
+        <div class="status-header">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="statusTitle">Connecting to DeepSeek Harness daemon...</span>
+        </div>
+        <p class="status-message" id="statusDesc">
+          Attempting to establish connection on <code>http://127.0.0.1:3080</code>. If not running, start the server in terminal:
+        </p>
+        <div class="code-snippet">
+          <code>dsh --profile web</code>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" id="btnRetry">
+          <span>🔄</span> Retry Connection
+        </button>
+        <button class="btn btn-secondary" id="btnCopy">
+          <span>📋</span> Copy Command
+        </button>
+      </div>
+    </div>
+
+    <script>
+      // Safe IPC invoker
+      function invokeTauri(command, args = {}) {
+        if (window.__TAURI_INTERNALS__ && typeof window.__TAURI_INTERNALS__.invoke === 'function') {
+          return window.__TAURI_INTERNALS__.invoke(command, args);
+        }
+        console.info('[Tauri IPC Simulated]', command, args);
+        return Promise.resolve(null);
+      }
+
+      // Wire Setup Wizard buttons
+      const btnRetry = document.getElementById('btnRetry');
+      if (btnRetry) {
+        btnRetry.addEventListener('click', () => {
+          const dot = document.getElementById('statusDot');
+          const title = document.getElementById('statusTitle');
+          if (title) title.innerText = 'Reconnecting...';
+          invokeTauri('retry_spawn_dsh').then(() => {
+            window.location.reload();
+          }).catch(() => {
+            window.location.reload();
+          });
+        });
+      }
+
+      const btnCopy = document.getElementById('btnCopy');
+      if (btnCopy) {
+        btnCopy.addEventListener('click', () => {
+          navigator.clipboard.writeText('dsh --profile web').then(() => {
+            btnCopy.innerText = '✅ Copied!';
+            setTimeout(() => {
+              btnCopy.innerHTML = '<span>📋</span> Copy Command';
+            }, 2000);
+          });
+        });
+      }
+    </script>
+  </body>
 </html>

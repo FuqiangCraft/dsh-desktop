@@ -27,3 +27,25 @@ test('tauri bundle icons exist on disk', async () => {
     assert.ok(existsSync(fullPath), `Icon file ${iconPath} must exist on disk`)
   }
 })
+
+test('tray uses recent sessions instead of an attention HUD', async () => {
+  const main = await readFile(new URL('../src-tauri/src/main.rs', import.meta.url), 'utf8')
+  const frontend = await readFile(new URL('../frontend/index.html', import.meta.url), 'utf8')
+
+  assert.match(main, /sync_recent_sessions/)
+  assert.match(main, /"最近会话"/)
+  assert.match(main, /"新建会话"/)
+  assert.doesNotMatch(main, /WebviewWindowBuilder::new\(app, "hud"/)
+  assert.doesNotMatch(main, /toggle_hud|report_pending_interaction/)
+  assert.doesNotMatch(frontend, /DeepSeek Attention HUD|0 pending|Esc to close/)
+})
+
+test('every tray action restores a hidden or minimized main window', async () => {
+  const main = await readFile(new URL('../src-tauri/src/main.rs', import.meta.url), 'utf8')
+  const helper = main.match(/fn restore_main_window[\s\S]*?\n}/)?.[0] ?? ''
+
+  assert.match(helper, /window\.show\(\)/, 'restoring a hidden window must show it')
+  assert.match(helper, /window\.unminimize\(\)/, 'show alone does not restore a minimized Windows window')
+  assert.match(helper, /window\.set_focus\(\)/, 'the restored window must be foregrounded')
+  assert.match(main, /"new-chat" => \{\s*restore_main_window\(app, true\)/)
+})
