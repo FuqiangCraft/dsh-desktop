@@ -18,7 +18,6 @@ test('tauri bundle icons exist on disk', async () => {
   const config = JSON.parse(
     await readFile(new URL('../src-tauri/tauri.conf.json', import.meta.url), 'utf8'),
   )
-  const iconsDir = new URL('../src-tauri/', import.meta.url).pathname
 
   assert.ok(Array.isArray(config.bundle.icon), 'bundle.icon must be an array')
   assert.ok(config.bundle.icon.length > 0, 'bundle.icon must have at least one icon')
