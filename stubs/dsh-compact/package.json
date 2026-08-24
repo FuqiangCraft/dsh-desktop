@@ -1,0 +1,9 @@
+{
+  "name": "@deepseek-ai/dsh-compact",
+  "version": "0.0.1-rc.1",
+  "description": "Local type-only stub. The real @deepseek-ai/dsh-compact is not published to npm; dsh-client-runtime depends on it only for internal types, which skipLibCheck skips.",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "type": "module",
+  "license": "MIT"
+}

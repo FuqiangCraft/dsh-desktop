@@ -1,0 +1,46 @@
+{
+  "name": "deepseek-harness-desktop-pro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The Ultimate Next-Generation Desktop Plugin & Native Client for DeepSeek Harness",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "dev:plugin": "pnpm --filter @dsh-community/dsh-desktop-plugin dev",
+    "dev:app": "pnpm --filter @dsh-community/dsh-desktop-app dev",
+    "dev:hud": "pnpm --filter @dsh-community/dsh-desktop-app dev:hud",
+    "tauri": "pnpm --filter @dsh-community/dsh-desktop-app tauri",
+    "lint": "oxlint --ignore-pattern '**/lib/**' --ignore-pattern '**/target/**' .",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "check": "pnpm lint && pnpm typecheck && pnpm --filter @dsh-community/dsh-desktop-plugin build"
+  },
+  "keywords": [
+    "deepseek",
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "desktop",
+    "tauri",
+    "raycast",
+    "agent"
+  ],
+  "author": "FuqiangCraft",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FuqiangCraft/dsh-desktop.git"
+  },
+  "homepage": "https://github.com/FuqiangCraft/dsh-desktop#readme",
+  "bugs": {
+    "url": "https://github.com/FuqiangCraft/dsh-desktop/issues"
+  },
+  "devDependencies": {
+    "oxlint": "^1.14.0",
+    "typescript": "^5.8.2"
+  },
+  "packageManager": "pnpm@11.9.0",
+  "engines": {
+    "node": ">=22"
+  }
+}

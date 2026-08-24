@@ -1,0 +1,16 @@
+{
+  "name": "@dsh-community/dsh-desktop-app",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness Desktop — native Tauri shell embedding the dsh web UI",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "test": "node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4"
+  }
+}

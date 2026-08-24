@@ -1,0 +1,9 @@
+{
+  "name": "@deepseek-ai/dsh-type-meta",
+  "version": "0.0.1-rc.1",
+  "description": "Local type-only stub. The real package is not published to npm; it exists only as a transitive type dependency of the dsh client packages, which skipLibCheck skips.",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "type": "module",
+  "license": "MIT"
+}

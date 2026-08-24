@@ -1,0 +1,23 @@
+node_modules/
+.pnpm-store/
+
+# JavaScript build output
+packages/*/lib/
+packages/*/dist/
+*.tgz
+
+# Rust / Tauri build output
+packages/dsh-desktop-app/src-tauri/target/
+packages/dsh-desktop-app/src-tauri/gen/
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example

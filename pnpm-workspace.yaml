@@ -1,0 +1,18 @@
+packages:
+  - 'packages/*'
+  - 'stubs/*'
+
+# @deepseek-ai/dsh-compact, dsh-type-meta and dsh-user-interaction are not
+# published to npm but dsh-client-runtime (and its transitive deps) depend on
+# them for internal types, which skipLibCheck skips. Resolve them to local
+# type-only stubs so the install succeeds.
+overrides:
+  '@deepseek-ai/dsh-compact': workspace:*
+  '@deepseek-ai/dsh-type-meta': workspace:*
+  '@deepseek-ai/dsh-user-interaction': workspace:*
+  '@deepseek-ai/dsh-paths': workspace:*
+  '@deepseek-ai/dsh-tasks': workspace:*
+  '@deepseek-ai/dsh-client-ui-slash': workspace:*
+
+onlyBuiltDependencies:
+  - esbuild
