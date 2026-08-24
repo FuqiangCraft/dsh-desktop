@@ -18,8 +18,8 @@ export interface CanvasInjected {
 /** Full component props: the view's runtime kit + inject face + locale seat. */
 export type MultiAgentCanvasProps = ConvViewProps & InjectFace<CanvasInjected> & PropsLocale<'desktop'>
 
-/** The runtime fields the canvas reads. */
-type Card = SessionSummary & { displayTitle: string }
+/** The runtime fields the canvas reads from the session store. */
+export type Card = SessionSummary & { displayTitle: string }
 
 /** Locale keys per interaction kind. */
 const KIND_TEXT: Record<string, 'attention.kind.approval' | 'attention.kind.question' | 'attention.kind.plan-review'> = {
@@ -28,7 +28,12 @@ const KIND_TEXT: Record<string, 'attention.kind.approval' | 'attention.kind.ques
   'plan-review': 'attention.kind.plan-review',
 }
 
-function statusKey(s: Card): 'canvas.status.running' | 'canvas.status.idle' | 'canvas.status.waiting' {
+/**
+ * Determine the localized status badge key for a session card.
+ * @param s - session card item.
+ * @returns matching desktop locale key.
+ */
+export function statusKey(s: Card): 'canvas.status.running' | 'canvas.status.idle' | 'canvas.status.waiting' {
   if (s.pendingInteraction !== undefined) return 'canvas.status.waiting'
   return s.running ? 'canvas.status.running' : 'canvas.status.idle'
 }
