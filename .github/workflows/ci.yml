@@ -34,13 +34,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint and typecheck
+      - name: Lint, typecheck and test
         run: |
           pnpm run lint
           pnpm run typecheck
+          pnpm run test
 
       - name: Build plugin
         run: pnpm --filter @mixian/dsh-desktop-plugin build
 
-      - name: Run test suite
-        run: node --test packages/dsh-desktop-app/test/startup-config.test.mjs
+      - name: Verify bundle integrity
+        run: pnpm run verify:bundle

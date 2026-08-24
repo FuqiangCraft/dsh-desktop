@@ -12,7 +12,9 @@
     "tauri": "pnpm --filter @dsh-community/dsh-desktop-app tauri",
     "lint": "oxlint --ignore-pattern '**/lib/**' --ignore-pattern '**/target/**' .",
     "typecheck": "pnpm -r --if-present run typecheck",
-    "check": "pnpm lint && pnpm typecheck && pnpm --filter @mixian/dsh-desktop-plugin build"
+    "test": "node --test packages/dsh-desktop-app/test/startup-config.test.mjs packages/dsh-desktop-plugin/test/locales.test.mjs packages/dsh-desktop-plugin/test/config.test.mjs packages/dsh-desktop-plugin/test/screen-capture.test.mjs packages/dsh-desktop-plugin/test/notifier.test.mjs",
+    "verify:bundle": "node scripts/verify-bundle.mjs",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm --filter @mixian/dsh-desktop-plugin build && pnpm verify:bundle"
   },
   "keywords": [
     "deepseek",
