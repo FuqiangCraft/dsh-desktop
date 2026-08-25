@@ -14,6 +14,7 @@ test('captureCommand resolves appropriate command and args for Windows', () => {
   assert.ok(result.args.includes('-NoProfile'))
   assert.ok(result.args.includes('-NonInteractive'))
   const script = result.args[result.args.length - 1]
+  assert.ok(script.includes('SetProcessDPIAware'))
   assert.ok(script.includes('System.Windows.Forms'))
   assert.ok(script.includes('CopyFromScreen'))
 })
@@ -26,11 +27,19 @@ test('captureCommand resolves screencapture for macOS', () => {
   assert.deepEqual(result.args, ['-x', '-t', 'png', tempPath])
 })
 
-test('captureCommand resolves scrot for Linux', () => {
+test('captureCommand resolves scrot for Linux X11', () => {
   const tempPath = '/tmp/capture-123.png'
-  const result = captureCommand(tempPath, 'linux')
+  const result = captureCommand(tempPath, 'linux', {})
 
   assert.equal(result.command, 'scrot')
+  assert.deepEqual(result.args, [tempPath])
+})
+
+test('captureCommand resolves grim for Linux Wayland', () => {
+  const tempPath = '/tmp/capture-123.png'
+  const result = captureCommand(tempPath, 'linux', { WAYLAND_DISPLAY: 'wayland-0' })
+
+  assert.equal(result.command, 'grim')
   assert.deepEqual(result.args, [tempPath])
 })
 

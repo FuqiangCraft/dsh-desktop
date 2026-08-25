@@ -18,7 +18,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import { en, zh, type DesktopKey } from './locales.ts'
 import { MultiAgentCanvas, type CanvasInjected } from './MultiAgentCanvas.tsx'
-import { setupNotificationWatcher, type SessionsListFace } from './notifier.ts'
+import { setupNotificationWatcher, setupTraySessionSync, type SessionsListFace } from './notifier.ts'
 import { adoptStyles } from './styles.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -63,6 +63,18 @@ export function apply(ctx: ClientContext): void {
   // different `sessions` Context member, and the two collide in this
   // single-program build.
   const sessions = ctx.get('sessions') as unknown as SessionsListFace & { open: (id: string) => void }
+  window.__DSH_DESKTOP_OPEN_SESSION__ = (id) => sessions.open(id)
+  window.__DSH_DESKTOP_NEW_CHAT__ = () => {
+    const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
+    const newChat = buttons.find((button) =>
+      button.getAttribute('aria-label') === '新建会话'
+      || button.textContent?.trim() === '新建会话'
+      || button.getAttribute('aria-label') === 'New chat'
+      || button.textContent?.trim() === 'New chat',
+    )
+    newChat?.click()
+  }
+  ctx.effect(() => setupTraySessionSync(sessions), 'dsh-desktop-plugin: tray sessions')
   ctx.effect(() => setupNotificationWatcher(sessions, t, (id) => sessions.open(id)), 'dsh-desktop-plugin: notifications')
 
   ctx.effect(() => ctx.conversationViews.register(canvasViewDefinition), 'dsh-desktop-plugin: canvas view')

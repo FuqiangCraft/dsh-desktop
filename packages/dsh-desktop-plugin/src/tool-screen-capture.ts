@@ -42,9 +42,11 @@ export interface ScreenCaptureValue {
 export function captureCommand(
   tempPath: string,
   platform: NodeJS.Platform = process.platform,
+  env: NodeJS.ProcessEnv = process.env,
 ): { command: string; args: string[] } {
   if (platform === 'win32') {
     const script = [
+      'try { Add-Type -TypeDefinition "using System; using System.Runtime.InteropServices; public class NativeDpi { [DllImport(\\\"user32.dll\\\")] public static extern bool SetProcessDPIAware(); }"; [NativeDpi]::SetProcessDPIAware() | Out-Null } catch {};',
       'Add-Type -AssemblyName System.Windows.Forms;',
       'Add-Type -AssemblyName System.Drawing;',
       '$b=[System.Windows.Forms.Screen]::PrimaryScreen.Bounds;',
@@ -59,6 +61,9 @@ export function captureCommand(
   if (platform === 'darwin') {
     return { command: 'screencapture', args: ['-x', '-t', 'png', tempPath] }
   }
+  if (platform === 'linux' && (env.WAYLAND_DISPLAY !== undefined || env.XDG_SESSION_TYPE === 'wayland')) {
+    return { command: 'grim', args: [tempPath] }
+  }
   return { command: 'scrot', args: [tempPath] }
 }
 
@@ -71,13 +76,22 @@ export async function captureScreenPng(): Promise<Buffer> {
       await execFileAsync(command, args, { timeout: 15000 })
     } catch (error) {
       if (process.platform === 'linux') {
+        // Progressive fallback for Linux environments: grim -> gnome-screenshot -> scrot
         try {
-          await execFileAsync('gnome-screenshot', ['-f', tempPath], { timeout: 15000 })
+          await execFileAsync('grim', [tempPath], { timeout: 15000 })
         } catch {
-          throw new Error(
-            'screen_capture: neither "scrot" nor "gnome-screenshot" could be executed on Linux. Please install scrot or gnome-screenshot.',
-            { cause: error },
-          )
+          try {
+            await execFileAsync('gnome-screenshot', ['-f', tempPath], { timeout: 15000 })
+          } catch {
+            try {
+              await execFileAsync('scrot', [tempPath], { timeout: 15000 })
+            } catch {
+              throw new Error(
+                'screen_capture: neither "grim", "gnome-screenshot", nor "scrot" could be executed on Linux. Please install grim (for Wayland) or scrot.',
+                { cause: error },
+              )
+            }
+          }
         }
       } else if (process.platform === 'darwin') {
         throw new Error(

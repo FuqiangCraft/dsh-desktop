@@ -26,6 +26,10 @@ export interface SessionsListFace {
   }
 }
 
+type TauriInternals = {
+  invoke?: (command: string, args?: Record<string, unknown>) => Promise<unknown>
+}
+
 /** Locale keys for each interaction kind's notification title. */
 const KIND_TITLE: Record<DesktopInteractionStatus, DesktopKey> = {
   approval: 'notify.titleApproval',
@@ -34,6 +38,39 @@ const KIND_TITLE: Record<DesktopInteractionStatus, DesktopKey> = {
 }
 
 type T = (key: DesktopKey) => string
+
+/** Typed Native Desktop Bridge interface. */
+export interface DshDesktopBridge {
+  notify(payload: { id: string; title: string; kind: DesktopInteractionStatus; label: string }): void
+}
+
+declare global {
+  interface Window {
+    __DSH_DESKTOP_BRIDGE__?: DshDesktopBridge
+    __TAURI_INTERNALS__?: TauriInternals
+    __DSH_DESKTOP_OPEN_SESSION__?: (id: string) => void
+    __DSH_DESKTOP_NEW_CHAT__?: () => void
+  }
+}
+
+/** Keep the native tray's recent-session submenu aligned with the client store. */
+export function setupTraySessionSync(sessions: SessionsListFace): () => void {
+  const invoke = window.__TAURI_INTERNALS__?.invoke
+  if (typeof invoke !== 'function') return () => {}
+
+  const update = (): void => {
+    const snapshot = sessions.list.getSnapshot()
+    const recent = snapshot.ids
+      .map((id) => snapshot.byId[id])
+      .filter((row): row is SessionSummary => row !== undefined)
+      .slice(0, 5)
+      .map((row) => ({ id: row.id, title: row.displayTitle }))
+    void invoke('sync_recent_sessions', { sessions: recent })
+  }
+
+  update()
+  return sessions.list.subscribe(update)
+}
 
 /** Browser Notification availability shim. */
 function notifications(): typeof Notification | undefined {
@@ -54,7 +91,8 @@ export function setupNotificationWatcher(
   open: (id: SessionId) => void,
 ): () => void {
   const Notif = notifications()
-  if (Notif === undefined) return () => {}
+  const hasBridge = typeof window !== 'undefined' && (Boolean(window.__DSH_DESKTOP_BRIDGE__) || Boolean(window.__TAURI_INTERNALS__))
+  if (Notif === undefined && !hasBridge) return () => {}
 
   const seen = new Map<SessionId, DesktopInteractionStatus>()
 
@@ -83,9 +121,9 @@ export function setupNotificationWatcher(
   return sessions.list.subscribe(update)
 }
 
-/** Create one browser notification, requesting permission on first use. */
+/** Create one browser or native notification, requesting permission on first use. */
 function fire(
-  Notif: typeof Notification,
+  Notif: typeof Notification | undefined,
   row: SessionSummary,
   status: DesktopInteractionStatus,
   t: T,
@@ -93,6 +131,23 @@ function fire(
 ): void {
   const title = `${t('nav')} · ${row.displayTitle}`
   const body = t(KIND_TITLE[status])
+
+  if (typeof window !== 'undefined' && window.__DSH_DESKTOP_BRIDGE__) {
+    try {
+      window.__DSH_DESKTOP_BRIDGE__.notify({
+        id: row.id,
+        title: row.displayTitle,
+        kind: status,
+        label: body,
+      })
+      return
+    } catch {
+      // Graceful fallback to web notification if bridge call fails
+    }
+  }
+
+  if (Notif === undefined) return
+
   const show = (): void => {
     const notif = new Notif(title, { body, tag: `dsh-desktop-${row.id}-${status}`, requireInteraction: true })
     notif.onclick = () => {
