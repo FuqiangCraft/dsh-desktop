@@ -1,6 +1,6 @@
 [package]
 name = "dsh-desktop-app"
-version = "0.1.0"
+version = "0.1.1"
 description = "DeepSeek Harness Desktop — native shell embedding the dsh web UI"
 edition = "2021"
 
