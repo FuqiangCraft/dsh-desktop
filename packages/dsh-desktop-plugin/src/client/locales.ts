@@ -1,6 +1,6 @@
 /**
- * `desktop` locale namespace: the attention-HUD copy and notification titles.
- * Simplified Chinese is the product copy; English mirrors it.
+ * `desktop` locale namespace: attention-HUD, canvas, and desktop & pet settings.
+ * Simplified Chinese is the product copy; English mirrors it 1:1.
  */
 
 /** Simplified Chinese dictionary (the key-set source of truth). */
@@ -25,6 +25,23 @@ export const zh = {
   'canvas.status.waiting': '等待中',
   'canvas.turn': '轮次',
   'canvas.open': '打开会话',
+
+  // Settings: Desktop & Pet Companion
+  'settings.title': '宠物',
+  'settings.subtitle': '选择并管理桌面宠物',
+  'settings.group.pet': '宠物',
+  'settings.petEnabled.label': '启用桌面伴侣',
+  'settings.petEnabled.desc': '在桌面上显示微型伴侣浮窗，实时感知 Agent 思考与执行状态',
+  'settings.petCharacter.label': '宠物伴侣',
+  'settings.petCharacter.desc': '选择显示在桌面上的伴侣角色',
+  'settings.petCharacter.robot': '蓝焰机器人',
+  'settings.petCharacter.whale': '深海小鲸鱼',
+  'settings.petCharacter.cat': '星际小蓝猫',
+  'settings.petCharacter.woodfish': '赛博电子木鱼',
+  'settings.petCharacter.robotDesc': '灵动可靠的原生 AI 桌面伙伴。',
+  'settings.petCharacter.whaleDesc': '安静陪伴，适合专注工作的深海朋友。',
+  'settings.petCharacter.catDesc': '好奇敏捷，时刻关注 Agent 动态。',
+  'settings.petCharacter.woodfishDesc': '功德 +1，给繁忙工作流一点赛博禅意。',
 } satisfies Record<string, string>
 
 /** The `desktop` namespace key union. */
@@ -52,4 +69,21 @@ export const en: Record<DesktopKey, string> = {
   'canvas.status.waiting': 'Waiting',
   'canvas.turn': 'Turn',
   'canvas.open': 'Open session',
+
+  // Settings: Desktop & Pet Companion
+  'settings.title': 'Pets',
+  'settings.subtitle': 'Choose and manage your desktop pet',
+  'settings.group.pet': 'Pets',
+  'settings.petEnabled.label': 'Enable desktop companion',
+  'settings.petEnabled.desc': 'Display a floating pet widget reflecting real-time agent state',
+  'settings.petCharacter.label': 'Companion character',
+  'settings.petCharacter.desc': 'Choose the character shown on your desktop',
+  'settings.petCharacter.robot': 'Blueflare Robot',
+  'settings.petCharacter.whale': 'Deep-sea Whale',
+  'settings.petCharacter.cat': 'Starlight Cat',
+  'settings.petCharacter.woodfish': 'Cyber Wooden Fish',
+  'settings.petCharacter.robotDesc': 'The lively and dependable original AI companion.',
+  'settings.petCharacter.whaleDesc': 'A calm deep-sea friend for focused work.',
+  'settings.petCharacter.catDesc': 'Curious, nimble, and attentive to every agent update.',
+  'settings.petCharacter.woodfishDesc': 'Cyber zen for busy workflows. Merit +1.',
 }

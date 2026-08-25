@@ -43,6 +43,7 @@ await build({
   target: ['es2022'],
   sourcemap: true,
   jsx: 'automatic',
+  loader: { '.png': 'dataurl' },
   external: [...dshExternal, 'react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'scheduler'],
   banner: {
     js: `window.__ModuleLoader__.load({ id: ${JSON.stringify(PKG)}, factory: (require) => { var module = { exports: {} }; var exports = module.exports;`,

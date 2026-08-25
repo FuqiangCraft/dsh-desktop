@@ -2,9 +2,11 @@
  * @mixian/dsh-desktop-plugin — browser half.
  *
  * Registers the `desktop` dictionaries, the notification watcher (fires a
- * desktop notification when a session enters a pending interaction), and the
- * multi-agent tiling canvas as a `conversation.view` tab. All registrations
- * are fiber effects, so unloading unwinds them.
+ * desktop notification when a session enters a pending interaction), the
+ * multi-agent tiling canvas as a `conversation.view` tab, the Desktop &
+ * Companion settings into the DSH native `settings.section` slot, and the
+ * pet state engine driving the floating companion window.
+ * All registrations are fiber effects, so unloading unwinds them.
  *
  * The floating attention HUD (AttentionCard) targets the `shell.overlay`
  * frame-wide slot, which exists in dsh master but is not yet in the published
@@ -15,10 +17,15 @@ import type { ClientContext, ConversationViewDefinition } from '@deepseek-ai/dsh
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 // Type-only: pulls the SlotMap merge declaring `conversation.view`.
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+// Type-only: pulls the SlotMap merge declaring `settings.section`.
+import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type {} from '@deepseek-ai/dsh-client-ui-slots'
 import { en, zh, type DesktopKey } from './locales.ts'
 import { MultiAgentCanvas, type CanvasInjected } from './MultiAgentCanvas.tsx'
 import { setupNotificationWatcher, setupTraySessionSync, type SessionsListFace } from './notifier.ts'
+import { setupPetStateEngine } from './pet/stateEngine.ts'
+import { DesktopSettingsSection } from './settings/DesktopSettingsSection.tsx'
+import { getDesktopSettings, syncDesktopSettingsToHost } from './settings/settingsStore.ts'
 import { adoptStyles } from './styles.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -33,6 +40,9 @@ const NS = 'desktop'
 
 /** The `conversation.view` tab id and the matching view-builder target. */
 const CANVAS_VIEW = 'canvas'
+
+/** The `settings.section` entry id for desktop & companion settings. */
+const SETTINGS_SECTION_ID = 'desktop-companion'
 
 /** Required services: the sessions store, slot registry, locale, and view registry. */
 export const inject = ['sessions', 'slots', 'locale', 'conversationViews']
@@ -74,8 +84,10 @@ export function apply(ctx: ClientContext): void {
     )
     newChat?.click()
   }
+  syncDesktopSettingsToHost(getDesktopSettings())
   ctx.effect(() => setupTraySessionSync(sessions), 'dsh-desktop-plugin: tray sessions')
   ctx.effect(() => setupNotificationWatcher(sessions, t, (id) => sessions.open(id)), 'dsh-desktop-plugin: notifications')
+  ctx.effect(() => setupPetStateEngine(sessions, t), 'dsh-desktop-plugin: pet state engine')
 
   ctx.effect(() => ctx.conversationViews.register(canvasViewDefinition), 'dsh-desktop-plugin: canvas view')
 
@@ -89,5 +101,18 @@ export function apply(ctx: ClientContext): void {
       inject: (): CanvasInjected => ({ open: (id) => sessions.open(id) }),
     },
     MultiAgentCanvas,
+  ))
+
+  // Native Settings Integration: Register Desktop & Pet Companion settings section
+  ctx.slots.inject('settings.section', () => ctx.slots.register(
+    {
+      name: 'settings.section',
+      id: SETTINGS_SECTION_ID,
+      order: 30,
+      locale: NS,
+      label: () => t('settings.title'),
+      inject: () => ({ t }),
+    },
+    DesktopSettingsSection,
   ))
 }

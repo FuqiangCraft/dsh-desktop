@@ -5,8 +5,18 @@ fn main() {
     // explicit capability grants the command with a matching `remote.urls`.
     tauri_build::try_build(
         tauri_build::Attributes::new().app_manifest(
-            tauri_build::AppManifest::new()
-                .commands(&["sync_recent_sessions", "retry_spawn_dsh"]),
+            tauri_build::AppManifest::new().commands(&[
+                "sync_recent_sessions",
+                "retry_spawn_dsh",
+                "sync_desktop_settings",
+                "get_pet_resource_path",
+                "open_pet_resource_folder",
+                "toggle_pet_window",
+                "play_notification_sound",
+                "restore_main_window_from_pet",
+                "update_pet_state",
+                "start_dragging_pet",
+            ]),
         ),
     )
     .expect("failed to run tauri-build")

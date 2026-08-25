@@ -28,16 +28,47 @@ test('tauri bundle icons exist on disk', async () => {
   }
 })
 
-test('tray uses recent sessions instead of an attention HUD', async () => {
+test('tray uses recent sessions and companion controls', async () => {
   const main = await readFile(new URL('../src-tauri/src/main.rs', import.meta.url), 'utf8')
-  const frontend = await readFile(new URL('../frontend/index.html', import.meta.url), 'utf8')
 
   assert.match(main, /sync_recent_sessions/)
   assert.match(main, /"最近会话"/)
   assert.match(main, /"新建会话"/)
-  assert.doesNotMatch(main, /WebviewWindowBuilder::new\(app, "hud"/)
-  assert.doesNotMatch(main, /toggle_hud|report_pending_interaction/)
-  assert.doesNotMatch(frontend, /DeepSeek Attention HUD|0 pending|Esc to close/)
+  assert.match(main, /"桌面伴侣"/)
+  assert.match(main, /toggle_pet_window/)
+})
+
+test('companion pet floating window and frontend exist', async () => {
+  const petHtmlPath = new URL('../frontend/pet.html', import.meta.url)
+  assert.ok(existsSync(petHtmlPath), 'frontend/pet.html must exist')
+
+  const petHtml = await readFile(petHtmlPath, 'utf8')
+  assert.match(petHtml, /pointermove/, 'pet.html must distinguish dragging from pet interaction')
+  assert.match(petHtml, /start_dragging_pet/, 'pet.html must remain draggable')
+  assert.match(petHtml, /__DSH_SET_PET_STATE__/, 'pet.html must expose state machine updater')
+  assert.match(petHtml, /SoundFX/, 'pet.html must retain notification sound support')
+  assert.match(petHtml, /dsh-companion\.png/, 'pet.html must render the character asset')
+  assert.match(petHtml, /__DSH_SET_PET_CHARACTER__/, 'pet.html must expose character switching')
+  assert.match(petHtml, /__DSH_SET_PET_SIZE__/, 'pet.html must expose size control')
+  assert.match(petHtml, /playWoodfish/, 'wooden fish must have an interaction sound')
+  assert.match(petHtml, /playMeow/, 'cat must have an interaction sound')
+  assert.doesNotMatch(petHtml, /capsule-wrapper|pixel-wrapper|bot-wrapper/, 'legacy widget styles must be removed')
+  for (const asset of ['dsh-companion.png', 'dsh-companion-whale.png', 'dsh-companion-cat.png', 'dsh-companion-woodfish.png']) {
+    assert.ok(existsSync(new URL(`../frontend/${asset}`, import.meta.url)), `${asset} must exist`)
+  }
+
+  const main = await readFile(new URL('../src-tauri/src/main.rs', import.meta.url), 'utf8')
+  assert.match(main, /settings\.pet_character/, 'native settings sync must forward the selected character')
+  assert.match(main, /WebviewWindowBuilder::new\(\s*app,\s*"pet",\s*WebviewUrl::App\("pet\.html"\.into\(\)\)/)
+  assert.match(main, /\.transparent\(true\)/)
+  assert.match(main, /\.always_on_top\(true\)/)
+})
+
+test('desktop companion stays off the Windows taskbar', async () => {
+  const main = await readFile(new URL('../src-tauri/src/main.rs', import.meta.url), 'utf8')
+  const petWindow = main.match(/WebviewWindowBuilder::new\([\s\S]*?"pet"[\s\S]*?\.build\(\)\?/)?.[0] ?? ''
+
+  assert.match(petWindow, /\.skip_taskbar\(true\)/, 'the companion is a utility surface, not a second taskbar window')
 })
 
 test('every tray action restores a hidden or minimized main window', async () => {
@@ -50,23 +81,33 @@ test('every tray action restores a hidden or minimized main window', async () =>
   assert.match(main, /"new-chat" => \{\s*restore_main_window\(app, true\)/)
 })
 
-test('capability grants the embedded dsh origin IPC access to the app commands', async () => {
-  // Regression: Tauri v2 denies ALL IPC from remote origins unless a capability
-  // explicitly grants the command with a matching `remote.urls`. The dsh web UI
-  // runs at the remote origin http://127.0.0.1:3080, so without this capability
-  // the tray recent-sessions sync (sync_recent_sessions) silently never fires.
+test('capability grants both main and pet windows IPC access to all commands', async () => {
   const capabilityPath = new URL('../src-tauri/capabilities/default.json', import.meta.url)
-  assert.ok(existsSync(capabilityPath), 'src-tauri/capabilities/default.json must exist (remote-origin IPC is denied without it)')
+  assert.ok(existsSync(capabilityPath), 'src-tauri/capabilities/default.json must exist')
 
   const capability = JSON.parse(await readFile(capabilityPath, 'utf8'))
 
-  assert.ok(capability.windows?.includes('main'), 'capability must apply to the main window')
+  assert.ok(capability.windows?.includes('main'), 'capability must apply to main window')
+  assert.ok(capability.windows?.includes('pet'), 'capability must apply to pet window')
   assert.ok(
     capability.remote?.urls?.some((url) => url.includes('127.0.0.1:3080')),
     'capability must grant the remote dsh origin (http://127.0.0.1:3080) access to IPC',
   )
 
-  for (const command of ['sync_recent_sessions', 'retry_spawn_dsh']) {
+  const expectedCommands = [
+    'sync_recent_sessions',
+    'retry_spawn_dsh',
+    'sync_desktop_settings',
+    'get_pet_resource_path',
+    'open_pet_resource_folder',
+    'toggle_pet_window',
+    'play_notification_sound',
+    'restore_main_window_from_pet',
+    'update_pet_state',
+    'start_dragging_pet',
+  ]
+
+  for (const command of expectedCommands) {
     const permission = `allow-${command.replaceAll('_', '-')}`
     assert.ok(
       capability.permissions?.includes(permission),
@@ -74,12 +115,8 @@ test('capability grants the embedded dsh origin IPC access to the app commands',
     )
   }
 
-  // App-command permissions are only referenceable once build.rs declares an
-  // app ACL manifest listing them; without it the capability fails validation.
   const buildRs = await readFile(new URL('../src-tauri/build.rs', import.meta.url), 'utf8')
-  assert.match(
-    buildRs,
-    /AppManifest::new\(\)[\s\S]*\.commands\(&\[[^\]]*"sync_recent_sessions"[\s\S]*"retry_spawn_dsh"/,
-    'build.rs must declare an app ACL manifest listing both app commands',
-  )
+  for (const command of expectedCommands) {
+    assert.match(buildRs, new RegExp(`"${command}"`), `build.rs must declare ${command}`)
+  }
 })

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DSH Desktop Companion</title>
+  <style>
+    *{box-sizing:border-box;user-select:none;-webkit-user-select:none}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:transparent}body{--pet-scale:1;font-family:"Segoe UI",system-ui,sans-serif}
+    .stage{position:relative;width:100%;height:100%;display:grid;place-items:end center;cursor:grab}.stage:active{cursor:grabbing}
+    .companion{width:calc(136px * var(--pet-scale));height:calc(154px * var(--pet-scale));object-fit:contain;pointer-events:none;transform-origin:50% 86%;filter:drop-shadow(0 10px 12px rgba(12,20,46,.28));animation:breathe 3.4s ease-in-out infinite;transition:filter .18s,transform .18s}
+    .stage:hover .companion{filter:drop-shadow(0 12px 16px rgba(12,20,46,.36)) brightness(1.05);transform:translateY(-2px) scale(1.025)}
+    .status{position:absolute;top:4px;left:50%;max-width:154px;padding:7px 10px;border:1px solid rgba(15,23,42,.1);border-radius:12px;background:rgba(255,255,255,.94);color:#172033;box-shadow:0 8px 24px rgba(15,23,42,.18);font-size:12px;font-weight:600;white-space:nowrap;opacity:0;transform:translate(-50%,5px) scale(.96);transition:opacity .18s,transform .18s;pointer-events:none}
+    .status:after{content:"";position:absolute;left:50%;bottom:-5px;width:9px;height:9px;background:inherit;border-right:1px solid rgba(15,23,42,.1);border-bottom:1px solid rgba(15,23,42,.1);transform:translateX(-50%) rotate(45deg)}
+    .stage:hover .status,.stage:not(.state-idle) .status{opacity:1;transform:translate(-50%,0) scale(1)}
+    .state-thinking .companion{animation:think 1.3s ease-in-out infinite}.state-working .companion{animation:work 1s ease-in-out infinite}.state-alert .companion{animation:alert .5s ease-in-out 4}.state-success .companion{animation:celebrate .8s cubic-bezier(.2,.8,.2,1)}
+    .stage.is-interacting .companion{animation:petReact .48s cubic-bezier(.2,.9,.25,1)}
+    .menu{position:fixed;right:6px;bottom:8px;display:none;min-width:132px;padding:5px;border:1px solid rgba(15,23,42,.1);border-radius:11px;background:rgba(255,255,255,.96);box-shadow:0 14px 34px rgba(15,23,42,.24)}.menu.visible{display:block}
+    .menu button{width:100%;padding:7px 9px;border:0;border-radius:7px;background:transparent;color:#172033;text-align:left;font:12px "Segoe UI",system-ui,sans-serif;cursor:pointer}.menu button:hover{background:#eef2ff}
+    @keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}@keyframes think{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(3deg) translateY(-4px)}}@keyframes work{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}@keyframes alert{0%,100%{transform:rotate(0)}35%{transform:rotate(-7deg)}70%{transform:rotate(7deg)}}@keyframes celebrate{0%,100%{transform:scale(1)}45%{transform:translateY(-12px) scale(1.08) rotate(4deg)}}@keyframes petReact{0%,100%{transform:rotate(0) scale(1)}35%{transform:rotate(-7deg) scale(.96)}65%{transform:rotate(5deg) scale(1.07)}}
+    @media(prefers-reduced-motion:reduce){.companion{animation:none!important}}
+  </style>
+</head>
+<body>
+  <div class="stage state-idle" id="stage"><div class="status" id="status">随时待命</div><img class="companion" id="companion" src="dsh-companion.png" alt="DSH 桌面伴侣" draggable="false"></div>
+  <div class="menu" id="menu"><button data-action="open">打开主界面</button><button data-action="new">新建会话</button><button data-action="hide">隐藏伴侣</button></div>
+  <script>
+    const SoundFX={context(){return this.ctx||(this.ctx=new(window.AudioContext||window.webkitAudioContext)())},play(frequencies){try{const audio=this.context(),gain=audio.createGain();gain.gain.setValueAtTime(.12,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.32);gain.connect(audio.destination);frequencies.forEach((frequency,index)=>{const tone=audio.createOscillator();tone.frequency.value=frequency;tone.connect(gain);tone.start(audio.currentTime+index*.08);tone.stop(audio.currentTime+.24+index*.08)})}catch{}},playWoodfish(){try{const audio=this.context(),tone=audio.createOscillator(),gain=audio.createGain();tone.type='triangle';tone.frequency.setValueAtTime(310,audio.currentTime);tone.frequency.exponentialRampToValueAtTime(115,audio.currentTime+.12);gain.gain.setValueAtTime(.3,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.22);tone.connect(gain).connect(audio.destination);tone.start();tone.stop(audio.currentTime+.23)}catch{}},playMeow(){try{const audio=this.context(),tone=audio.createOscillator(),gain=audio.createGain();tone.type='sawtooth';tone.frequency.setValueAtTime(520,audio.currentTime);tone.frequency.exponentialRampToValueAtTime(780,audio.currentTime+.13);tone.frequency.exponentialRampToValueAtTime(430,audio.currentTime+.48);gain.gain.setValueAtTime(.08,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.5);tone.connect(gain).connect(audio.destination);tone.start();tone.stop(audio.currentTime+.52)}catch{}},playAlert(){this.play([440,660])},playSuccess(){this.play([523,659,784])}};
+    const invoke=(command,args)=>window.__TAURI_INTERNALS__?.invoke?.(command,args),stage=document.getElementById('stage'),status=document.getElementById('status'),menu=document.getElementById('menu'),companion=document.getElementById('companion');let pointerDownAt=0,pointerStart={x:0,y:0},dragged=false,currentCharacter='robot',lastInteraction=0;
+    const characters={robot:'dsh-companion.png',whale:'dsh-companion-whale.png',cat:'dsh-companion-cat.png',woodfish:'dsh-companion-woodfish.png'};
+    window.__DSH_SET_PET_CHARACTER__=(character='robot')=>{currentCharacter=characters[character]?character:'robot';companion.src=characters[currentCharacter]};
+    const labels={idle:'随时待命',thinking:'正在思考…',working:'正在执行…',alert:'需要你的确认',success:'任务已完成'};
+    window.__DSH_SET_PET_STATE__=(state='idle',text='')=>{stage.className=`stage state-${state}`;status.textContent=text||labels[state]||labels.idle};
+    window.__DSH_SET_PET_SIZE__=(value=100)=>{document.body.style.setProperty('--pet-scale',String(Math.max(60,Math.min(140,value))/100))};
+    const interact=()=>{const now=Date.now();if(now-lastInteraction<900)return;lastInteraction=now;stage.classList.remove('is-interacting');void stage.offsetWidth;stage.classList.add('is-interacting');if(currentCharacter==='woodfish'){status.textContent='功德 +1';SoundFX.playWoodfish()}else if(currentCharacter==='cat'){status.textContent='喵～';SoundFX.playMeow()}else{status.textContent=currentCharacter==='whale'?'呼噜～':'你好呀';SoundFX.play([523,659])}setTimeout(()=>stage.classList.remove('is-interacting'),520)};
+    stage.addEventListener('pointerdown',e=>{if(e.button!==0)return;pointerDownAt=Date.now();pointerStart={x:e.clientX,y:e.clientY};dragged=false});
+    stage.addEventListener('pointermove',e=>{if(!pointerDownAt||dragged)return;if(Math.hypot(e.clientX-pointerStart.x,e.clientY-pointerStart.y)>6){dragged=true;invoke('start_dragging_pet')}});
+    stage.addEventListener('pointerup',e=>{if(e.button===0&&!dragged&&Date.now()-pointerDownAt<350)interact();pointerDownAt=0});
+    stage.addEventListener('mouseenter',interact);
+    stage.addEventListener('contextmenu',e=>{e.preventDefault();menu.classList.add('visible')});
+    document.addEventListener('pointerdown',e=>{if(!menu.contains(e.target))menu.classList.remove('visible')});
+    menu.addEventListener('click',e=>{const action=e.target.closest('button')?.dataset.action;if(action==='open'||action==='new')invoke('restore_main_window_from_pet');if(action==='hide')invoke('toggle_pet_window');menu.classList.remove('visible')});
+  </script>
+</body>
+</html>
