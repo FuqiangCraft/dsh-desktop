@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed & Improved
 - Grant remote dsh origin IPC access to app commands in Tauri shell.
+- Pin in-app directory browser via desktop patch to ensure Add Workspace dialog reliably renders inside desktop WebView.
 - Harden desktop environment checks and screen capture utilities.
 - Add recent sessions tray menu to desktop app for rapid switching.
 - Refactor and expand JSDoc comments and TypeScript definitions across client UI components.
