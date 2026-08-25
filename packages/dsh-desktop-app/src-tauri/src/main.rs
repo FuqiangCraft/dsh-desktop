@@ -4,6 +4,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::net::TcpStream;
+use std::path::Path;
 use std::process::{Child, Command};
 use std::sync::Mutex;
 use std::thread;
@@ -39,14 +40,15 @@ fn server_ready() -> bool {
 
 /// Spawn the dsh host server using the default `web` profile.
 /// Probes standard PATH, falling back gracefully if not found.
-fn spawn_server() -> Option<Child> {
+fn spawn_server(patch_path: &Path) -> Option<Child> {
     let mut command = if cfg!(windows) {
         let mut c = Command::new("cmd");
-        c.args(["/C", "dsh --profile web"]);
+        c.args(["/C", "dsh", "--profile", "web", "--patch"])
+            .arg(patch_path);
         c
     } else {
         let mut c = Command::new("dsh");
-        c.args(["--profile", "web"]);
+        c.args(["--profile", "web", "--patch"]).arg(patch_path);
         c
     };
 
@@ -154,7 +156,12 @@ fn retry_spawn_dsh(app: AppHandle) -> Result<bool, String> {
     if let Some(state) = app.try_state::<ServerChild>() {
         if let Ok(mut guard) = state.0.lock() {
             if guard.is_none() {
-                *guard = spawn_server();
+                let patch_path = app
+                    .path()
+                    .resource_dir()
+                    .map_err(|error| error.to_string())?
+                    .join("desktop.patch.yml");
+                *guard = spawn_server(&patch_path);
             }
         }
     }
@@ -183,7 +190,12 @@ fn main() {
         ])
         .setup(|app| {
             // 1. Spawn dsh server if not already running.
-            let child = if server_ready() { None } else { spawn_server() };
+            let patch_path = app.path().resource_dir()?.join("desktop.patch.yml");
+            let child = if server_ready() {
+                None
+            } else {
+                spawn_server(&patch_path)
+            };
             app.manage(ServerChild(Mutex::new(child)));
 
             // 2. Poll up to ~3.5 seconds to see if DSH is available.
