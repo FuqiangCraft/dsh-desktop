@@ -50,7 +50,7 @@
   "scripts": {
     "build": "node build.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/locales.test.mjs test/config.test.mjs test/screen-capture.test.mjs test/notifier.test.mjs",
+    "test": "node --test test/locales.test.mjs test/config.test.mjs test/screen-capture.test.mjs test/notifier.test.mjs test/settings.test.mjs test/pet-state.test.mjs",
     "check": "pnpm run typecheck && pnpm run test && pnpm run build"
   },
   "engines": {

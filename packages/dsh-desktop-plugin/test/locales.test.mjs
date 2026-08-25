@@ -45,6 +45,12 @@ test('critical UI keys exist and have expected semantics', () => {
     'notify.titlePlanReview',
     'canvas.title',
     'canvas.empty',
+    // Desktop & Pet Settings
+    'settings.title',
+    'settings.subtitle',
+    'settings.group.pet',
+    'settings.petEnabled.label',
+    'settings.petCharacter.label',
   ]
 
   for (const key of requiredKeys) {

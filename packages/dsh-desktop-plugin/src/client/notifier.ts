@@ -94,6 +94,21 @@ export function setupNotificationWatcher(
   const hasBridge = typeof window !== 'undefined' && (Boolean(window.__DSH_DESKTOP_BRIDGE__) || Boolean(window.__TAURI_INTERNALS__))
   if (Notif === undefined && !hasBridge) return () => {}
 
+  // Prompt for notification permission on the operator's first click gesture
+  // (modern browsers block Notification.requestPermission when called out-of-gesture).
+  let removePermissionListener: (() => void) | undefined
+  if (Notif && Notif.permission === 'default' && typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    const requestOnInteraction = (): void => {
+      if (Notif.permission === 'default') {
+        void Notif.requestPermission()
+      }
+    }
+    window.addEventListener('click', requestOnInteraction, { once: true })
+    removePermissionListener = () => {
+      window.removeEventListener('click', requestOnInteraction)
+    }
+  }
+
   const seen = new Map<SessionId, DesktopInteractionStatus>()
 
   const update = (): void => {
@@ -118,7 +133,11 @@ export function setupNotificationWatcher(
     const status = initial.byId[id]?.pendingInteraction as DesktopInteractionStatus | undefined
     if (status !== undefined) seen.set(id, status)
   }
-  return sessions.list.subscribe(update)
+  const unsubscribe = sessions.list.subscribe(update)
+  return () => {
+    removePermissionListener?.()
+    unsubscribe()
+  }
 }
 
 /** Create one browser or native notification, requesting permission on first use. */

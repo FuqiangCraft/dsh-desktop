@@ -157,3 +157,235 @@ test('notification watcher delegates to __DSH_DESKTOP_BRIDGE__ when available', 
     globalThis.window = originalWindow
   }
 })
+
+test('notification generates correct titles, bodies and tags for all 3 interaction kinds', () => {
+  const fired = []
+
+  class MockNotification {
+    static permission = 'granted'
+    constructor(title, options) {
+      this.title = title
+      this.options = options
+      fired.push({ title, options })
+    }
+  }
+
+  const originalWindow = globalThis.window
+  try {
+    globalThis.window = {
+      Notification: MockNotification,
+      focus: () => {},
+    }
+
+    const sessions = createMockSessions()
+    const unsubscribe = setupNotificationWatcher(sessions, (k) => zh[k] ?? k, () => {})
+
+    // 1. Approval
+    sessions.setState({
+      ids: ['s-appr'],
+      byId: {
+        's-appr': { id: 's-appr', displayTitle: 'Approval Task', pendingInteraction: 'approval' },
+      },
+    })
+    assert.equal(fired.length, 1)
+    assert.equal(fired[0].title, '桌面 · Approval Task')
+    assert.equal(fired[0].options.body, 'DSH 需要你的审批')
+    assert.equal(fired[0].options.tag, 'dsh-desktop-s-appr-approval')
+    assert.equal(fired[0].options.requireInteraction, true)
+
+    // 2. Question
+    sessions.setState({
+      ids: ['s-appr', 's-q'],
+      byId: {
+        's-appr': { id: 's-appr', displayTitle: 'Approval Task', pendingInteraction: 'approval' },
+        's-q': { id: 's-q', displayTitle: 'Question Task', pendingInteraction: 'question' },
+      },
+    })
+    assert.equal(fired.length, 2)
+    assert.equal(fired[1].title, '桌面 · Question Task')
+    assert.equal(fired[1].options.body, 'DSH 需要你的回答')
+    assert.equal(fired[1].options.tag, 'dsh-desktop-s-q-question')
+
+    // 3. Plan Review
+    sessions.setState({
+      ids: ['s-appr', 's-q', 's-plan'],
+      byId: {
+        's-appr': { id: 's-appr', displayTitle: 'Approval Task', pendingInteraction: 'approval' },
+        's-q': { id: 's-q', displayTitle: 'Question Task', pendingInteraction: 'question' },
+        's-plan': { id: 's-plan', displayTitle: 'Plan Task', pendingInteraction: 'plan-review' },
+      },
+    })
+    assert.equal(fired.length, 3)
+    assert.equal(fired[2].title, '桌面 · Plan Task')
+    assert.equal(fired[2].options.body, 'DSH 需要你评审计划')
+    assert.equal(fired[2].options.tag, 'dsh-desktop-s-plan-plan-review')
+
+    unsubscribe()
+  } finally {
+    globalThis.window = originalWindow
+  }
+})
+
+test('clicking notification focuses window, opens target session and closes notification', () => {
+  let focused = false
+  let openedSessionId = null
+  const instances = []
+
+  class MockNotification {
+    static permission = 'granted'
+    constructor(title, options) {
+      this.title = title
+      this.options = options
+      this.closed = false
+      this.onclick = null
+      instances.push(this)
+    }
+    close() {
+      this.closed = true
+    }
+  }
+
+  const originalWindow = globalThis.window
+  try {
+    globalThis.window = {
+      Notification: MockNotification,
+      focus: () => {
+        focused = true
+      },
+    }
+
+    const sessions = createMockSessions()
+    const unsubscribe = setupNotificationWatcher(
+      sessions,
+      (k) => zh[k] ?? k,
+      (id) => {
+        openedSessionId = id
+      },
+    )
+
+    sessions.setState({
+      ids: ['s-target'],
+      byId: {
+        's-target': { id: 's-target', displayTitle: 'Target Session', pendingInteraction: 'question' },
+      },
+    })
+
+    assert.equal(instances.length, 1)
+    const notif = instances[0]
+    assert.equal(typeof notif.onclick, 'function')
+
+    // Trigger notification click
+    notif.onclick()
+
+    assert.equal(focused, true, 'Window must be focused on click')
+    assert.equal(openedSessionId, 's-target', 'Target session ID must be passed to open()')
+    assert.equal(notif.closed, true, 'Notification must be closed on click')
+
+    unsubscribe()
+  } finally {
+    globalThis.window = originalWindow
+  }
+})
+
+test('handles notification permissions correctly (granted, default with prompt, denied)', async () => {
+  const fired = []
+  let requested = false
+
+  class MockNotification {
+    static permission = 'default'
+    static async requestPermission() {
+      requested = true
+      MockNotification.permission = 'granted'
+      return 'granted'
+    }
+    constructor(title, options) {
+      this.title = title
+      this.options = options
+      fired.push({ title, options })
+    }
+  }
+
+  const originalWindow = globalThis.window
+  try {
+    globalThis.window = {
+      Notification: MockNotification,
+      focus: () => {},
+    }
+
+    const sessions = createMockSessions()
+    const unsubscribe = setupNotificationWatcher(sessions, (k) => zh[k] ?? k, () => {})
+
+    sessions.setState({
+      ids: ['s1'],
+      byId: {
+        s1: { id: 's1', displayTitle: 'Permission Test', pendingInteraction: 'approval' },
+      },
+    })
+
+    // Allow promise tick for requestPermission
+    await new Promise((resolve) => setTimeout(resolve, 10))
+
+    assert.equal(requested, true, 'Should request permission when permission is default')
+    assert.equal(fired.length, 1, 'Should fire notification after permission is granted')
+
+    // When denied
+    MockNotification.permission = 'denied'
+    sessions.setState({
+      ids: ['s1', 's2'],
+      byId: {
+        s1: { id: 's1', displayTitle: 'Permission Test', pendingInteraction: 'approval' },
+        s2: { id: 's2', displayTitle: 'Denied Test', pendingInteraction: 'approval' },
+      },
+    })
+
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    assert.equal(fired.length, 1, 'Should not fire notification when permission is denied')
+
+    unsubscribe()
+  } finally {
+    globalThis.window = originalWindow
+  }
+})
+
+test('falls back to browser notification when bridge throws', () => {
+  const fired = []
+
+  class MockNotification {
+    static permission = 'granted'
+    constructor(title, options) {
+      this.title = title
+      this.options = options
+      fired.push({ title, options })
+    }
+  }
+
+  const originalWindow = globalThis.window
+  try {
+    globalThis.window = {
+      Notification: MockNotification,
+      focus: () => {},
+      __DSH_DESKTOP_BRIDGE__: {
+        notify: () => {
+          throw new Error('Bridge failed')
+        },
+      },
+    }
+
+    const sessions = createMockSessions()
+    const unsubscribe = setupNotificationWatcher(sessions, (k) => zh[k] ?? k, () => {})
+
+    sessions.setState({
+      ids: ['s1'],
+      byId: {
+        s1: { id: 's1', displayTitle: 'Fallback Session', pendingInteraction: 'question' },
+      },
+    })
+
+    assert.equal(fired.length, 1, 'Should fallback to browser notification when bridge throws')
+    assert.equal(fired[0].options.tag, 'dsh-desktop-s1-question')
+
+    unsubscribe()
+  } finally {
+    globalThis.window = originalWindow
+  }
+})

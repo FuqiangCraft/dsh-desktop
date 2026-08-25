@@ -1,14 +1,22 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Grants the main window access to the app's own IPC commands from both the local fallback page and the embedded dsh web UI (remote origin http://127.0.0.1:3080). Tauri v2 denies IPC from remote origins unless the command is explicitly allowed here with a matching remote url.",
-  "windows": ["main"],
+  "description": "Grants the main and pet windows access to the app's own IPC commands from both local app pages and the embedded dsh web UI (remote origin http://127.0.0.1:3080).",
+  "windows": ["main", "pet"],
   "remote": {
     "urls": ["http://127.0.0.1:3080/*"]
   },
   "permissions": [
     "core:default",
     "allow-sync-recent-sessions",
-    "allow-retry-spawn-dsh"
+    "allow-retry-spawn-dsh",
+    "allow-sync-desktop-settings",
+    "allow-get-pet-resource-path",
+    "allow-open-pet-resource-folder",
+    "allow-toggle-pet-window",
+    "allow-play-notification-sound",
+    "allow-restore-main-window-from-pet",
+    "allow-update-pet-state",
+    "allow-start-dragging-pet"
   ]
 }
