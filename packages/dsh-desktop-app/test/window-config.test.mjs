@@ -11,7 +11,7 @@ test('tauri configuration has valid productName and identifier', async () => {
 
   assert.equal(config.productName, 'DSH Desktop')
   assert.equal(config.identifier, 'com.deepseek.harness.desktop')
-  assert.equal(config.version, '0.1.0')
+  assert.equal(config.version, '0.1.1')
 })
 
 test('tauri bundle icons exist on disk', async () => {
