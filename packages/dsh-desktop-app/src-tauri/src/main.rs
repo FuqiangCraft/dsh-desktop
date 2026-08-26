@@ -18,6 +18,8 @@ use tauri::{
     tray::TrayIconBuilder,
     AppHandle, Manager, WebviewUrl, WindowEvent, Wry,
 };
+use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
+use tauri_plugin_updater::UpdaterExt;
 
 /// The spawned `dsh` server child, so the app can terminate it on quit.
 struct ServerChild(Mutex<Option<Child>>);
@@ -95,8 +97,18 @@ fn quit(app: &AppHandle) {
 /// Restore the main window from both tray-hidden and Windows-minimized states.
 fn restore_main_window(app: &AppHandle, new_chat: bool) {
     if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.unminimize();
+        let visible = window.is_visible().unwrap_or(false);
+        let minimized = window.is_minimized().unwrap_or(false);
+        if !visible || minimized {
+            // GTK can retain a native iconized state that `unminimize` alone
+            // does not clear. Hiding first resets only minimized windows.
+            #[cfg(target_os = "linux")]
+            if minimized {
+                let _ = window.hide();
+            }
+            let _ = window.unminimize();
+            let _ = window.show();
+        }
         let _ = window.set_focus();
         if new_chat {
             let _ = window.eval("window.__DSH_DESKTOP_NEW_CHAT__?.()");
@@ -124,6 +136,9 @@ struct RecentMenu(Submenu<Wry>);
 
 /// The tray's pet open/hide toggle, relabeled as the pet visibility changes.
 struct PetToggleItem(MenuItem<Wry>);
+
+/// The tray update action, disabled and relabeled while a check is running.
+struct UpdateMenuItem(MenuItem<Wry>);
 
 /// Pet window position persisted across launches.
 #[derive(Debug, Serialize, Deserialize)]
@@ -349,8 +364,61 @@ fn retry_spawn_dsh(app: AppHandle) -> Result<bool, String> {
     Ok(ready)
 }
 
+/// Format raw updater errors into friendly user-facing messages.
+fn format_update_error(error: &str) -> String {
+    let lower = error.to_lowercase();
+    if lower.contains("could not fetch a valid release json")
+        || lower.contains("404")
+        || lower.contains("not found")
+    {
+        "当前已是最新版本，或官方远程仓库尚未发布新版本的更新包。".to_string()
+    } else if lower.contains("network")
+        || lower.contains("timeout")
+        || lower.contains("timed out")
+        || lower.contains("dns")
+        || lower.contains("connect")
+    {
+        "网络连接异常，无法访问更新服务器，请检查网络连接后重试。".to_string()
+    } else {
+        format!("检查更新时发生错误：{error}")
+    }
+}
+
+/// Check the configured release endpoint and install a newer signed build when available.
+#[tauri::command]
+async fn check_for_updates(app: AppHandle) -> Result<bool, String> {
+    let updater = app.updater().map_err(|error| error.to_string())?;
+    let update = updater
+        .check()
+        .await
+        .map_err(|error| format_update_error(&error.to_string()))?;
+
+    let Some(update) = update else {
+        return Ok(false);
+    };
+
+    let version = update.version.clone();
+    let _ = app
+        .dialog()
+        .message(format!(
+            "发现新版本 {version}。点击确定后将自动下载并安装，完成后应用会自动重启。"
+        ))
+        .kind(MessageDialogKind::Info)
+        .title("DSH Desktop 更新")
+        .blocking_show();
+
+    update
+        .download_and_install(|_, _| {}, || {})
+        .await
+        .map_err(|error| error.to_string())?;
+
+    app.restart();
+}
+
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             sync_recent_sessions,
             retry_spawn_dsh,
@@ -360,7 +428,8 @@ fn main() {
             list_pet_resources,
             read_pet_resource,
             update_pet_state,
-            start_dragging_pet
+            start_dragging_pet,
+            check_for_updates
         ])
         .setup(|app| {
             // 1. Spawn dsh server if not already running.
@@ -449,15 +518,26 @@ fn main() {
             let show = MenuItem::with_id(app, "show", "打开 DSH Desktop", true, None::<&str>)?;
             let pet_toggle = MenuItem::with_id(app, "pet-toggle", "隐藏宠物", true, None::<&str>)?;
             let new_chat = MenuItem::with_id(app, "new-chat", "新建会话", true, None::<&str>)?;
+            let check_update = MenuItem::with_id(app, "check-update", "检查更新...", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
             let separator_top = PredefinedMenuItem::separator(app)?;
             let separator_bottom = PredefinedMenuItem::separator(app)?;
             let menu = Menu::with_items(
                 app,
-                &[&recent, &separator_top, &show, &pet_toggle, &new_chat, &separator_bottom, &quit_item],
+                &[
+                    &recent,
+                    &separator_top,
+                    &show,
+                    &pet_toggle,
+                    &new_chat,
+                    &check_update,
+                    &separator_bottom,
+                    &quit_item,
+                ],
             )?;
             app.manage(RecentMenu(recent));
             app.manage(PetToggleItem(pet_toggle));
+            app.manage(UpdateMenuItem(check_update));
 
             let tray_icon = tauri::include_image!("icons/32x32.png");
 
@@ -503,6 +583,38 @@ fn main() {
                     }
                     "new-chat" => {
                         restore_main_window(app, true);
+                    }
+                    "check-update" => {
+                        if let Some(item) = app.try_state::<UpdateMenuItem>() {
+                            let _ = item.0.set_enabled(false);
+                            let _ = item.0.set_text("正在检查更新...");
+                        }
+                        let app = app.clone();
+                        tauri::async_runtime::spawn(async move {
+                            let result = check_for_updates(app.clone()).await;
+                            if let Some(item) = app.try_state::<UpdateMenuItem>() {
+                                let _ = item.0.set_text("检查更新...");
+                                let _ = item.0.set_enabled(true);
+                            }
+                            match result {
+                                Ok(false) => {
+                                    app.dialog()
+                                        .message("当前已是最新版本。")
+                                        .kind(MessageDialogKind::Info)
+                                        .title("DSH Desktop 更新")
+                                        .show(|_| {});
+                                }
+                                Err(error) => {
+                                    eprintln!("更新检查详情: {error}");
+                                    app.dialog()
+                                        .message(error)
+                                        .kind(MessageDialogKind::Info)
+                                        .title("DSH Desktop 更新")
+                                        .show(|_| {});
+                                }
+                                Ok(true) => {}
+                            }
+                        });
                     }
                     "quit" => quit(app),
                     id if id.starts_with("recent:") => {
