@@ -15,6 +15,7 @@ fn main() {
                 "read_pet_resource",
                 "update_pet_state",
                 "start_dragging_pet",
+                "check_for_updates",
             ]),
         ),
     )

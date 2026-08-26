@@ -8,6 +8,7 @@
   },
   "permissions": [
     "core:default",
+    "updater:default",
     "allow-sync-recent-sessions",
     "allow-retry-spawn-dsh",
     "allow-sync-desktop-settings",
@@ -16,6 +17,7 @@
     "allow-list-pet-resources",
     "allow-read-pet-resource",
     "allow-update-pet-state",
-    "allow-start-dragging-pet"
+    "allow-start-dragging-pet",
+    "allow-check-for-updates"
   ]
 }

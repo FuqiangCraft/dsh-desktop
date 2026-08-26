@@ -12,6 +12,11 @@ test('tauri configuration has valid productName and identifier', async () => {
   assert.equal(config.productName, 'DSH Desktop')
   assert.equal(config.identifier, 'com.deepseek.harness.desktop')
   assert.equal(config.version, '0.1.1')
+  assert.equal(config.bundle.createUpdaterArtifacts, true)
+  assert.deepEqual(config.plugins?.updater?.endpoints, [
+    'https://github.com/FuqiangCraft/dsh-desktop/releases/latest/download/latest.json',
+  ])
+  assert.ok(config.plugins?.updater?.pubkey, 'updater public key placeholder must be configured')
 })
 
 test('tauri bundle icons exist on disk', async () => {
@@ -38,6 +43,15 @@ test('tray uses recent sessions and companion controls', async () => {
   assert.match(main, /"打开宠物"/)
   assert.match(main, /"隐藏宠物"/)
   assert.match(main, /sync_pet_toggle_label/)
+  assert.match(main, /"check-update"/)
+  assert.match(main, /"检查更新\.\.\."/)
+  assert.match(main, /check_for_updates/)
+  assert.match(main, /"正在检查更新\.\.\."/)
+  assert.match(main, /"当前已是最新版本。"/)
+  assert.match(main, /"检查更新失败：\{error\}"/)
+  assert.match(main, /MessageDialogKind::Info/)
+  assert.match(main, /MessageDialogKind::Error/)
+  assert.match(main, /\.blocking_show\(\)/, 'the available-update prompt must remain visible until acknowledged')
 })
 
 test('companion pet floating window and frontend exist', async () => {
@@ -83,6 +97,14 @@ test('every tray action restores a hidden or minimized main window', async () =>
   assert.match(helper, /window\.show\(\)/, 'restoring a hidden window must show it')
   assert.match(helper, /window\.unminimize\(\)/, 'show alone does not restore a minimized Windows window')
   assert.match(helper, /window\.set_focus\(\)/, 'the restored window must be foregrounded')
+  assert.match(helper, /window\.is_visible\(\)/, 'an already visible window must not be hidden and shown again')
+  assert.match(helper, /window\.is_minimized\(\)/, 'restoration must distinguish minimized windows')
+  assert.match(helper, /if !visible \|\| minimized/, 'only hidden or minimized windows need restoration')
+  assert.match(
+    helper,
+    /cfg\(target_os = "linux"\)[\s\S]*?if minimized[\s\S]*?window\.hide\(\)[\s\S]*?window\.unminimize\(\)[\s\S]*?window\.show\(\)[\s\S]*?window\.set_focus\(\)/,
+    'Linux must clear GTK native minimization before restoring the window',
+  )
   assert.match(main, /"new-chat" => \{\s*restore_main_window\(app, true\)/)
 })
 
@@ -98,6 +120,10 @@ test('capability grants both main and pet windows IPC access to all commands', a
     capability.remote?.urls?.some((url) => url.includes('127.0.0.1:3080')),
     'capability must grant the remote dsh origin (http://127.0.0.1:3080) access to IPC',
   )
+  assert.ok(
+    capability.permissions?.includes('updater:default'),
+    'capability must grant the updater default permission set',
+  )
 
   const expectedCommands = [
     'sync_recent_sessions',
@@ -109,6 +135,7 @@ test('capability grants both main and pet windows IPC access to all commands', a
     'read_pet_resource',
     'update_pet_state',
     'start_dragging_pet',
+    'check_for_updates',
   ]
 
   for (const command of expectedCommands) {
