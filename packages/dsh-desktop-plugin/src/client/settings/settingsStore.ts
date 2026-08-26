@@ -5,8 +5,8 @@
 export interface DesktopSettings {
   /** Whether the desktop pet / companion floating widget is enabled. */
   petEnabled: boolean
-  /** Selected visual character for the desktop companion. */
-  petCharacter: 'robot' | 'whale' | 'cat' | 'woodfish'
+  /** Selected character: one of 'robot' | 'whale' | 'cat' | 'woodfish', or 'custom:<name>' for a PNG in ~/.dsh/pets. */
+  petCharacter: string
   /** Character size as a percentage of the default sprite size. */
   petSize: number
 }

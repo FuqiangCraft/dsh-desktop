@@ -13,9 +13,8 @@
     "allow-sync-desktop-settings",
     "allow-get-pet-resource-path",
     "allow-open-pet-resource-folder",
-    "allow-toggle-pet-window",
-    "allow-play-notification-sound",
-    "allow-restore-main-window-from-pet",
+    "allow-list-pet-resources",
+    "allow-read-pet-resource",
     "allow-update-pet-state",
     "allow-start-dragging-pet"
   ]
