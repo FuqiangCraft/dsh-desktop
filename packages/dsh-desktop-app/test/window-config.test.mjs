@@ -34,8 +34,10 @@ test('tray uses recent sessions and companion controls', async () => {
   assert.match(main, /sync_recent_sessions/)
   assert.match(main, /"最近会话"/)
   assert.match(main, /"新建会话"/)
-  assert.match(main, /"桌面伴侣"/)
-  assert.match(main, /toggle_pet_window/)
+  assert.match(main, /"pet-toggle"/)
+  assert.match(main, /"打开宠物"/)
+  assert.match(main, /"隐藏宠物"/)
+  assert.match(main, /sync_pet_toggle_label/)
 })
 
 test('companion pet floating window and frontend exist', async () => {
@@ -46,12 +48,15 @@ test('companion pet floating window and frontend exist', async () => {
   assert.match(petHtml, /pointermove/, 'pet.html must distinguish dragging from pet interaction')
   assert.match(petHtml, /start_dragging_pet/, 'pet.html must remain draggable')
   assert.match(petHtml, /__DSH_SET_PET_STATE__/, 'pet.html must expose state machine updater')
-  assert.match(petHtml, /SoundFX/, 'pet.html must retain notification sound support')
+  assert.doesNotMatch(petHtml, /id="menu"|data-action|新建会话|隐藏伴侣/, 'right-click menu must be removed')
+  assert.doesNotMatch(petHtml, /SoundFX|AudioContext|playWoodfish|playMeow/, 'pet must be silent')
+  assert.doesNotMatch(petHtml, /drop-shadow/, 'pet must not cast a drop shadow')
+  assert.doesNotMatch(petHtml, /mouseenter/, 'hover must not auto-interact')
+  assert.match(petHtml, /has-status/, 'interaction bubble must auto-hide')
+  assert.match(petHtml, /read_pet_resource/, 'custom pets must load via IPC')
   assert.match(petHtml, /dsh-companion\.png/, 'pet.html must render the character asset')
   assert.match(petHtml, /__DSH_SET_PET_CHARACTER__/, 'pet.html must expose character switching')
   assert.match(petHtml, /__DSH_SET_PET_SIZE__/, 'pet.html must expose size control')
-  assert.match(petHtml, /playWoodfish/, 'wooden fish must have an interaction sound')
-  assert.match(petHtml, /playMeow/, 'cat must have an interaction sound')
   assert.doesNotMatch(petHtml, /capsule-wrapper|pixel-wrapper|bot-wrapper/, 'legacy widget styles must be removed')
   for (const asset of ['dsh-companion.png', 'dsh-companion-whale.png', 'dsh-companion-cat.png', 'dsh-companion-woodfish.png']) {
     assert.ok(existsSync(new URL(`../frontend/${asset}`, import.meta.url)), `${asset} must exist`)
@@ -100,9 +105,8 @@ test('capability grants both main and pet windows IPC access to all commands', a
     'sync_desktop_settings',
     'get_pet_resource_path',
     'open_pet_resource_folder',
-    'toggle_pet_window',
-    'play_notification_sound',
-    'restore_main_window_from_pet',
+    'list_pet_resources',
+    'read_pet_resource',
     'update_pet_state',
     'start_dragging_pet',
   ]

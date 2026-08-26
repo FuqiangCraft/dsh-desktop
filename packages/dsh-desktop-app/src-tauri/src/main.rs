@@ -9,9 +9,10 @@ use std::path::Path;
 use std::process::{Child, Command};
 use std::sync::Mutex;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
-use serde::Deserialize;
+use base64::{engine::general_purpose::STANDARD, Engine};
+use serde::{Deserialize, Serialize};
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::TrayIconBuilder,
@@ -121,6 +122,45 @@ struct DesktopSettingsPayload {
 
 struct RecentMenu(Submenu<Wry>);
 
+/// The tray's pet open/hide toggle, relabeled as the pet visibility changes.
+struct PetToggleItem(MenuItem<Wry>);
+
+/// Pet window position persisted across launches.
+#[derive(Debug, Serialize, Deserialize)]
+struct SavedPetPosition {
+    pub x: i32,
+    pub y: i32,
+}
+
+/// Throttles writes of the pet window position during drags.
+struct PetPositionSaver(Mutex<Option<Instant>>);
+
+fn pet_position_file(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    let dir = app
+        .path()
+        .app_config_dir()
+        .map_err(|error| error.to_string())?;
+    std::fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
+    Ok(dir.join("pet-position.json"))
+}
+
+fn read_pet_position(app: &AppHandle) -> Option<SavedPetPosition> {
+    let file = pet_position_file(app).ok()?;
+    std::fs::read_to_string(file)
+        .ok()
+        .and_then(|raw| serde_json::from_str(&raw).ok())
+}
+
+/// Keep the tray's pet toggle label in sync with the pet window's visibility.
+fn sync_pet_toggle_label(app: &AppHandle) {
+    let Some(pet_window) = app.get_webview_window("pet") else { return };
+    let visible = pet_window.is_visible().unwrap_or(false);
+    let label = if visible { "隐藏宠物" } else { "打开宠物" };
+    if let Some(item) = app.try_state::<PetToggleItem>() {
+        let _ = item.0.set_text(label);
+    }
+}
+
 #[tauri::command]
 fn sync_recent_sessions(
     app: AppHandle,
@@ -162,14 +202,18 @@ fn sync_desktop_settings(app: AppHandle, settings: DesktopSettingsPayload) -> Re
         } else {
             let _ = pet_window.hide();
         }
+        sync_pet_toggle_label(&app);
         let character = match settings.pet_character.as_str() {
-            "whale" => "whale",
-            "cat" => "cat",
-            "woodfish" => "woodfish",
-            _ => "robot",
+            "whale" => "whale".to_string(),
+            "cat" => "cat".to_string(),
+            "woodfish" => "woodfish".to_string(),
+            custom if custom.starts_with("custom:") => custom.to_string(),
+            _ => "robot".to_string(),
         };
+        let character_json =
+            serde_json::to_string(&character).unwrap_or_else(|_| "\"robot\"".to_string());
         let _ = pet_window.eval(format!(
-            "window.__DSH_SET_PET_CHARACTER__?.('{character}'); window.__DSH_SET_PET_SIZE__?.({});",
+            "window.__DSH_SET_PET_CHARACTER__?.({character_json}); window.__DSH_SET_PET_SIZE__?.({});",
             settings.pet_size.clamp(60, 140)
         ));
     }
@@ -211,40 +255,41 @@ fn open_pet_resource_folder() -> Result<(), String> {
     Ok(())
 }
 
+/// Base64 data URL of a custom pet image placed in `~/.dsh/pets`.
 #[tauri::command]
-fn toggle_pet_window(app: AppHandle) -> Result<bool, String> {
-    if let Some(pet_window) = app.get_webview_window("pet") {
-        let is_visible = pet_window.is_visible().unwrap_or(false);
-        if is_visible {
-            let _ = pet_window.hide();
-            Ok(false)
-        } else {
-            let _ = pet_window.show();
-            let _ = pet_window.set_focus();
-            Ok(true)
-        }
-    } else {
-        Ok(false)
+fn read_pet_resource(name: String) -> Result<String, String> {
+    let dir = pet_resource_path()?;
+    let safe = name
+        .replace('/', "_")
+        .replace('\\', "_")
+        .replace("..", "_")
+        .chars()
+        .take(80)
+        .collect::<String>();
+    let file = dir.join(format!("{safe}.png"));
+    if !file.is_file() {
+        return Err(format!("自定义宠物 {name} 不存在"));
     }
+    let bytes = std::fs::read(&file).map_err(|error| error.to_string())?;
+    Ok(format!("data:image/png;base64,{}", STANDARD.encode(bytes)))
 }
 
+/// Names (file stems) of custom pets currently in `~/.dsh/pets`.
 #[tauri::command]
-fn play_notification_sound(app: AppHandle, kind: Option<String>) -> Result<(), String> {
-    if let Some(pet_window) = app.get_webview_window("pet") {
-        let kind_str = kind.unwrap_or_else(|| "success".to_string());
-        if kind_str == "alert" {
-            let _ = pet_window.eval("SoundFX?.playAlert?.()");
-        } else {
-            let _ = pet_window.eval("SoundFX?.playSuccess?.()");
+fn list_pet_resources() -> Result<Vec<String>, String> {
+    let dir = pet_resource_path()?;
+    let mut names = Vec::new();
+    for entry in std::fs::read_dir(&dir).map_err(|error| error.to_string())? {
+        let entry = entry.map_err(|error| error.to_string())?;
+        let path = entry.path();
+        if path.extension().and_then(|extension| extension.to_str()) == Some("png") {
+            if let Some(name) = path.file_stem().and_then(|stem| stem.to_str()) {
+                names.push(name.to_string());
+            }
         }
     }
-    Ok(())
-}
-
-#[tauri::command]
-fn restore_main_window_from_pet(app: AppHandle) -> Result<(), String> {
-    restore_main_window(&app, false);
-    Ok(())
+    names.sort();
+    Ok(names)
 }
 
 #[tauri::command]
@@ -312,9 +357,8 @@ fn main() {
             sync_desktop_settings,
             get_pet_resource_path,
             open_pet_resource_folder,
-            toggle_pet_window,
-            play_notification_sound,
-            restore_main_window_from_pet,
+            list_pet_resources,
+            read_pet_resource,
             update_pet_state,
             start_dragging_pet
         ])
@@ -354,6 +398,10 @@ fn main() {
             let _ = main_window.unminimize();
             let _ = main_window.set_focus();
 
+            // Seed the pet-position throttle so the pet's own startup moves
+            // (default placement, then the saved position) never clobber the file.
+            app.manage(PetPositionSaver(Mutex::new(Some(Instant::now()))));
+
             // 4. Companion Pet floating window positioned at bottom-right corner of screen
             let mut pet_builder = tauri::WebviewWindowBuilder::new(
                 app,
@@ -385,20 +433,31 @@ fn main() {
             let _ = pet_window.unminimize();
             let _ = pet_window.set_focus();
 
-            // 5. ChatGPT-style tray menu: recent chats, companion toggle, primary actions, quit.
+            if let Some(saved) = read_pet_position(app.handle()) {
+                if let Ok(Some(monitor)) = app.monitor_from_point(saved.x as f64, saved.y as f64) {
+                    let size = monitor.size();
+                    let pet_size = pet_window.inner_size().unwrap_or_default();
+                    let x = saved.x.clamp(0, (size.width as i32 - pet_size.width as i32).max(0));
+                    let y = saved.y.clamp(0, (size.height as i32 - pet_size.height as i32).max(0));
+                    let _ = pet_window.set_position(tauri::PhysicalPosition::new(x, y));
+                }
+            }
+
+            // 5. ChatGPT-style tray menu: recent chats, companion open/hide toggle, primary actions, quit.
             let recent_empty = MenuItem::with_id(app, "recent-empty", "暂无最近会话", false, None::<&str>)?;
             let recent = Submenu::with_id_and_items(app, "recent", "最近会话", true, &[&recent_empty])?;
             let show = MenuItem::with_id(app, "show", "打开 DSH Desktop", true, None::<&str>)?;
-            let toggle_pet = MenuItem::with_id(app, "toggle-pet", "桌面伴侣", true, None::<&str>)?;
+            let pet_toggle = MenuItem::with_id(app, "pet-toggle", "隐藏宠物", true, None::<&str>)?;
             let new_chat = MenuItem::with_id(app, "new-chat", "新建会话", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
             let separator_top = PredefinedMenuItem::separator(app)?;
             let separator_bottom = PredefinedMenuItem::separator(app)?;
             let menu = Menu::with_items(
                 app,
-                &[&recent, &separator_top, &show, &toggle_pet, &new_chat, &separator_bottom, &quit_item],
+                &[&recent, &separator_top, &show, &pet_toggle, &new_chat, &separator_bottom, &quit_item],
             )?;
             app.manage(RecentMenu(recent));
+            app.manage(PetToggleItem(pet_toggle));
 
             let tray_icon = tauri::include_image!("icons/32x32.png");
 
@@ -430,8 +489,17 @@ fn main() {
                     "show" => {
                         restore_main_window(app, false);
                     }
-                    "toggle-pet" => {
-                        let _ = toggle_pet_window(app.clone());
+                    "pet-toggle" => {
+                        if let Some(pet_window) = app.get_webview_window("pet") {
+                            let visible = pet_window.is_visible().unwrap_or(false);
+                            if visible {
+                                let _ = pet_window.hide();
+                            } else {
+                                let _ = pet_window.show();
+                                let _ = pet_window.set_focus();
+                            }
+                            sync_pet_toggle_label(app);
+                        }
                     }
                     "new-chat" => {
                         restore_main_window(app, true);
@@ -454,15 +522,55 @@ fn main() {
 
             app.manage(tray);
 
+            sync_pet_toggle_label(app.handle());
+
             Ok(())
         })
-        .on_window_event(|window, event| {
-            if let WindowEvent::CloseRequested { api, .. } = event {
-                if window.label() == "main" || window.label() == "pet" {
-                    api.prevent_close();
-                    let _ = window.hide();
+        .on_window_event(|window, event| match event {
+            WindowEvent::Moved(position) if window.label() == "pet" => {
+                let app = window.app_handle();
+                let now = Instant::now();
+                let should_write = app
+                    .try_state::<PetPositionSaver>()
+                    .map(|saver| {
+                        saver
+                            .0
+                            .lock()
+                            .map(|last| {
+                                last.map_or(true, |last| {
+                                    now.duration_since(last) > Duration::from_millis(500)
+                                })
+                            })
+                            .unwrap_or(true)
+                    })
+                    .unwrap_or(true);
+                if should_write {
+                    if let Some(saver) = app.try_state::<PetPositionSaver>() {
+                        if let Ok(mut last) = saver.0.lock() {
+                            *last = Some(now);
+                        }
+                    }
+                    let payload = SavedPetPosition {
+                        x: position.x,
+                        y: position.y,
+                    };
+                    if let (Ok(file), Ok(serialized)) =
+                        (pet_position_file(app), serde_json::to_string(&payload))
+                    {
+                        let _ = std::fs::write(file, serialized);
+                    }
                 }
             }
+            WindowEvent::CloseRequested { api, .. } if window.label() == "pet" => {
+                api.prevent_close();
+                let _ = window.hide();
+                sync_pet_toggle_label(window.app_handle());
+            }
+            WindowEvent::CloseRequested { api, .. } if window.label() == "main" => {
+                api.prevent_close();
+                let _ = window.hide();
+            }
+            _ => {}
         })
         .run(tauri::generate_context!())
         .expect("error while running DeepSeek Harness Desktop");

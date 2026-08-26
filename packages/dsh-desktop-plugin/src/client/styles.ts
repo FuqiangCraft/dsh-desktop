@@ -231,6 +231,18 @@ export const cssText = `
   object-fit: contain;
   filter: drop-shadow(0 5px 7px rgba(15, 23, 42, 0.18));
 }
+.dsh_desktop_petThumbnailPlaceholder {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--dsw-alias-label-tertiary);
+  background: var(--dsw-alias-bg-layer-2);
+  border: 1px dashed var(--dsw-alias-border-l1);
+  border-radius: 10px;
+}
 .dsh_desktop_petMeta { min-width: 0; }
 .dsh_desktop_petName {
   color: var(--dsw-alias-label-primary);

@@ -21,9 +21,24 @@ const invoke = (command: string, args?: Record<string, unknown>) => (window as u
 export const DesktopSettingsSection: React.FC<DesktopSettingsSectionProps> = ({ t }) => {
   const [settings, setSettings] = useState<DesktopSettings>(getDesktopSettings)
   const [resourcePath, setResourcePath] = useState('~\\.dsh\\pets')
+  const [customPets, setCustomPets] = useState<Array<{ name: string; preview: string }>>([])
 
   useEffect(() => subscribeDesktopSettings(setSettings), [])
   useEffect(() => { void Promise.resolve(invoke('get_pet_resource_path')).then((path) => { if (typeof path === 'string') setResourcePath(path) }) }, [])
+  useEffect(() => {
+    let cancelled = false
+    void Promise.resolve(invoke('list_pet_resources')).then(async (names) => {
+      if (!Array.isArray(names) || cancelled) return
+      const pets = await Promise.all(
+        (names as string[]).map(async (name) => ({
+          name,
+          preview: (await Promise.resolve(invoke('read_pet_resource', { name }))) as string,
+        })),
+      )
+      if (!cancelled) setCustomPets(pets)
+    })
+    return () => { cancelled = true }
+  }, [])
 
   return (
     <div className="dsh_desktop_settingsSection dsh_desktop_petSettings">
@@ -53,6 +68,24 @@ export const DesktopSettingsSection: React.FC<DesktopSettingsSectionProps> = ({ 
                 <div className="dsh_desktop_petDescription">{t(pet.description)}</div>
               </div>
               <button className="dsh_desktop_petSelect" type="button" disabled={selected} aria-pressed={selected} onClick={() => updateDesktopSettings({ petCharacter: pet.id, petEnabled: true })}>
+                {selected ? '已选' : '选择'}
+              </button>
+            </div>
+          )
+        })}
+        {customPets.map((pet) => {
+          const id = `custom:${pet.name}`
+          const selected = settings.petCharacter === id
+          return (
+            <div className={`dsh_desktop_petRow${selected ? ' is-selected' : ''}`} role="listitem" key={id}>
+              {pet.preview
+                ? <img className="dsh_desktop_petThumbnail" src={pet.preview} alt="" />
+                : <div className="dsh_desktop_petThumbnailPlaceholder">🐾</div>}
+              <div className="dsh_desktop_petMeta">
+                <div className="dsh_desktop_petName">{pet.name}</div>
+                <div className="dsh_desktop_petDescription">自定义宠物</div>
+              </div>
+              <button className="dsh_desktop_petSelect" type="button" disabled={selected} aria-pressed={selected} onClick={() => updateDesktopSettings({ petCharacter: id, petEnabled: true })}>
                 {selected ? '已选' : '选择'}
               </button>
             </div>
