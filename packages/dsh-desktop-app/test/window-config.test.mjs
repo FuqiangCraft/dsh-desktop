@@ -48,9 +48,8 @@ test('tray uses recent sessions and companion controls', async () => {
   assert.match(main, /check_for_updates/)
   assert.match(main, /"正在检查更新\.\.\."/)
   assert.match(main, /"当前已是最新版本。"/)
-  assert.match(main, /"检查更新失败：\{error\}"/)
+  assert.match(main, /format_update_error/)
   assert.match(main, /MessageDialogKind::Info/)
-  assert.match(main, /MessageDialogKind::Error/)
   assert.match(main, /\.blocking_show\(\)/, 'the available-update prompt must remain visible until acknowledged')
 })
 

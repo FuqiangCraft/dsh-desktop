@@ -364,15 +364,34 @@ fn retry_spawn_dsh(app: AppHandle) -> Result<bool, String> {
     Ok(ready)
 }
 
+/// Format raw updater errors into friendly user-facing messages.
+fn format_update_error(error: &str) -> String {
+    let lower = error.to_lowercase();
+    if lower.contains("could not fetch a valid release json")
+        || lower.contains("404")
+        || lower.contains("not found")
+    {
+        "当前已是最新版本，或官方远程仓库尚未发布新版本的更新包。".to_string()
+    } else if lower.contains("network")
+        || lower.contains("timeout")
+        || lower.contains("timed out")
+        || lower.contains("dns")
+        || lower.contains("connect")
+    {
+        "网络连接异常，无法访问更新服务器，请检查网络连接后重试。".to_string()
+    } else {
+        format!("检查更新时发生错误：{error}")
+    }
+}
+
 /// Check the configured release endpoint and install a newer signed build when available.
 #[tauri::command]
 async fn check_for_updates(app: AppHandle) -> Result<bool, String> {
-    let update = app
-        .updater()
-        .map_err(|error| error.to_string())?
+    let updater = app.updater().map_err(|error| error.to_string())?;
+    let update = updater
         .check()
         .await
-        .map_err(|error| error.to_string())?;
+        .map_err(|error| format_update_error(&error.to_string()))?;
 
     let Some(update) = update else {
         return Ok(false);
@@ -586,10 +605,10 @@ fn main() {
                                         .show(|_| {});
                                 }
                                 Err(error) => {
-                                    eprintln!("更新检查失败: {error}");
+                                    eprintln!("更新检查详情: {error}");
                                     app.dialog()
-                                        .message(format!("检查更新失败：{error}"))
-                                        .kind(MessageDialogKind::Error)
+                                        .message(error)
+                                        .kind(MessageDialogKind::Info)
                                         .title("DSH Desktop 更新")
                                         .show(|_| {});
                                 }
