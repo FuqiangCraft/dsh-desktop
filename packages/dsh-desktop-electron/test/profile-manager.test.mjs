@@ -27,7 +27,7 @@ test('DesktopProfileManager initializes isolated desktop profile with default bu
     const manifest = JSON.parse(fs.readFileSync(manager.paths.manifestPath, 'utf8'))
     assert.deepEqual(
       manifest.dsh?.profile?.bundles,
-      ['@deepseek-ai/dsh-web-app', '@mixian/dsh-desktop-plugin'],
+      ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@mixian/dsh-desktop-plugin'],
       'Desktop profile must include web-app and desktop plugin bundles',
     )
 
@@ -54,7 +54,7 @@ test('DesktopProfileManager can recover from checkpoint when profile is damaged'
     const manifest = JSON.parse(fs.readFileSync(manager.paths.manifestPath, 'utf8'))
     assert.deepEqual(
       manifest.dsh?.profile?.bundles,
-      ['@deepseek-ai/dsh-web-app', '@mixian/dsh-desktop-plugin'],
+      ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@mixian/dsh-desktop-plugin'],
     )
   })
 })
@@ -76,7 +76,7 @@ test('DesktopProfileManager resetProfile resets to factory default template', ()
     const manifest = JSON.parse(fs.readFileSync(manager.paths.manifestPath, 'utf8'))
     assert.deepEqual(
       manifest.dsh?.profile?.bundles,
-      ['@deepseek-ai/dsh-web-app', '@mixian/dsh-desktop-plugin'],
+      ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@mixian/dsh-desktop-plugin'],
     )
   })
 })

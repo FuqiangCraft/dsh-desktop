@@ -12,6 +12,7 @@ export const DEFAULT_DESKTOP_PROFILE_MANIFEST = {
   dsh: {
     profile: {
       bundles: [
+        '@deepseek-ai/dsh-base',
         '@deepseek-ai/dsh-web-app',
         '@mixian/dsh-desktop-plugin',
       ],
@@ -76,6 +77,27 @@ export class DesktopProfileManager {
         JSON.stringify(DEFAULT_DESKTOP_PROFILE_MANIFEST, null, 2) + '\n',
         'utf8',
       )
+    } else {
+      try {
+        const raw = fs.readFileSync(this.paths.manifestPath, 'utf8')
+        const parsed = JSON.parse(raw)
+        const bundles: string[] = parsed.dsh?.profile?.bundles || []
+        let changed = false
+        for (const req of DEFAULT_DESKTOP_PROFILE_MANIFEST.dsh.profile.bundles) {
+          if (!bundles.includes(req)) {
+            bundles.unshift(req)
+            changed = true
+          }
+        }
+        if (changed) {
+          if (!parsed.dsh) parsed.dsh = {}
+          if (!parsed.dsh.profile) parsed.dsh.profile = {}
+          parsed.dsh.profile.bundles = bundles
+          fs.writeFileSync(this.paths.manifestPath, JSON.stringify(parsed, null, 2) + '\n', 'utf8')
+        }
+      } catch {
+        // ignore parse error, will be handled by checkpoint restore
+      }
     }
 
     if (!fs.existsSync(this.paths.patchPath)) {
