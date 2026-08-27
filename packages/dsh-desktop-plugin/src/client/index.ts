@@ -76,14 +76,27 @@ export function apply(ctx: ClientContext): void {
   const sessions = ctx.get('sessions') as unknown as SessionsListFace & { open: (id: string) => void }
   window.__DSH_DESKTOP_OPEN_SESSION__ = (id) => sessions.open(id)
   window.__DSH_DESKTOP_NEW_CHAT__ = () => {
-    const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
-    const newChat = buttons.find((button) =>
-      button.getAttribute('aria-label') === '新建会话'
-      || button.textContent?.trim() === '新建会话'
-      || button.getAttribute('aria-label') === 'New chat'
-      || button.textContent?.trim() === 'New chat',
-    )
-    newChat?.click()
+    const candidates = Array.from(document.querySelectorAll<HTMLElement>(
+      'button, [role="button"], a[href], [data-action="new-chat"], [data-action="create-session"]',
+    ))
+    const isNewChatTarget = (el: HTMLElement) => {
+      const aria = (el.getAttribute('aria-label') || '').trim().toLowerCase()
+      const title = (el.getAttribute('title') || '').trim().toLowerCase()
+      const text = (el.textContent || '').trim().toLowerCase()
+      return aria === '新建会话' || aria === 'new chat' || aria.includes('新建') || aria.includes('new session')
+        || title === '新建会话' || title === 'new chat' || title.includes('新建')
+        || text === '新建会话' || text === 'new chat' || text === '新建' || text === '+ new' || text === '+'
+    }
+    const newChat = candidates.find(isNewChatTarget)
+    if (newChat) {
+      newChat.click()
+      return
+    }
+    try {
+      (sessions as unknown as { create?: () => void }).create?.()
+    } catch {
+      // ignore
+    }
   }
   syncDesktopSettingsToHost(getDesktopSettings())
   ctx.effect(() => setupTraySessionSync(sessions), 'dsh-desktop-plugin: tray sessions')
