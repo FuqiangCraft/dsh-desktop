@@ -12,7 +12,7 @@ export interface DesktopSettings {
 }
 
 export const DEFAULT_SETTINGS: DesktopSettings = {
-  petEnabled: true,
+  petEnabled: false,
   petCharacter: 'robot',
   petSize: 100,
 }

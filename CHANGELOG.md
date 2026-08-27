@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Make new-chat triggering reliable on Linux GTK/WebKit environments.
 - Prevent duplicate desktop instances and restore the existing window on relaunch.
 - Keep the background DSH host silent so desktop startup does not open a separate browser surface.
-- Add built-in persistent pet settings with a default robot companion, independent of Web plugin installation.
+- Add built-in persistent pet settings independent of Web plugin installation; the companion is hidden by default until enabled.
 - Refresh English and Chinese documentation for community plugin conventions.
 
 ## [0.1.1] - 2026-08-25

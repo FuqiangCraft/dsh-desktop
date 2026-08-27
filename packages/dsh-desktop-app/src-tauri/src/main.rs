@@ -152,7 +152,7 @@ struct DesktopSettingsPayload {
 impl Default for DesktopSettingsPayload {
     fn default() -> Self {
         Self {
-            pet_enabled: true,
+            pet_enabled: false,
             pet_character: "robot".to_string(),
             pet_size: 100,
         }

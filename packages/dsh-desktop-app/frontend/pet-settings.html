@@ -11,7 +11,7 @@
   <h1>桌面宠物</h1>
   <p class="sub">这些设置属于桌面应用，无需安装 Web 插件。</p>
   <div class="card">
-    <label><span class="copy"><strong>显示宠物</strong><span class="hint">默认开启，可随时从托盘隐藏</span></span><input id="enabled" class="toggle" type="checkbox"></label>
+    <label><span class="copy"><strong>显示宠物</strong><span class="hint">首次安装默认关闭，可随时从托盘打开</span></span><input id="enabled" class="toggle" type="checkbox"></label>
     <label><span class="copy"><strong>默认角色</strong><span class="hint">选择桌面伴侣形象</span></span><select id="character"><option value="robot">机器人</option><option value="whale">鲸鱼</option><option value="cat">小猫</option></select></label>
     <label><span class="copy"><strong>宠物大小</strong><span class="hint">60%–140%</span></span><span class="range"><input id="size" type="range" min="60" max="140" step="5"><span id="sizeValue" class="value"></span></span></label>
   </div>
@@ -19,7 +19,7 @@
   <script>
     const invoke=(command,args={})=>window.__TAURI_INTERNALS__.invoke(command,args);
     const enabled=document.getElementById('enabled'),character=document.getElementById('character'),size=document.getElementById('size'),sizeValue=document.getElementById('sizeValue');
-    let settings={petEnabled:true,petCharacter:'robot',petSize:100};
+    let settings={petEnabled:false,petCharacter:'robot',petSize:100};
     const render=()=>{enabled.checked=settings.petEnabled;character.value=['robot','whale','cat'].includes(settings.petCharacter)?settings.petCharacter:'robot';size.value=String(settings.petSize);sizeValue.textContent=`${settings.petSize}%`};
     const save=()=>{settings={petEnabled:enabled.checked,petCharacter:character.value,petSize:Number(size.value)};render();invoke('sync_desktop_settings',{settings}).catch(console.error)};
     enabled.addEventListener('change',save);character.addEventListener('change',save);size.addEventListener('input',save);
