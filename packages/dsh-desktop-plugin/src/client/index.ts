@@ -25,6 +25,7 @@ import { MultiAgentCanvas, type CanvasInjected } from './MultiAgentCanvas.tsx'
 import { setupNotificationWatcher, setupTraySessionSync, type SessionsListFace } from './notifier.ts'
 import { setupPetStateEngine } from './pet/stateEngine.ts'
 import { DesktopSettingsSection } from './settings/DesktopSettingsSection.tsx'
+import { setupPetNavIcon } from './settings/petNavIcon.ts'
 import { getDesktopSettings, syncDesktopSettingsToHost } from './settings/settingsStore.ts'
 import { adoptStyles } from './styles.ts'
 
@@ -88,6 +89,7 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => setupTraySessionSync(sessions), 'dsh-desktop-plugin: tray sessions')
   ctx.effect(() => setupNotificationWatcher(sessions, t, (id) => sessions.open(id)), 'dsh-desktop-plugin: notifications')
   ctx.effect(() => setupPetStateEngine(sessions, t), 'dsh-desktop-plugin: pet state engine')
+  ctx.effect(setupPetNavIcon, 'dsh-desktop-plugin: pet settings nav icon')
 
   ctx.effect(() => ctx.conversationViews.register(canvasViewDefinition), 'dsh-desktop-plugin: canvas view')
 
