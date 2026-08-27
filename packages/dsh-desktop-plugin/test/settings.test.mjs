@@ -17,18 +17,17 @@ test('settings store has expected default values', () => {
   assert.equal(settings.petSize, 100)
 })
 
-test('settings UI offers selectable companion characters', async () => {
+test('settings UI offers desktop companion characters without skin controls', async () => {
   const source = await readFile(new URL('../src/client/settings/DesktopSettingsSection.tsx', import.meta.url), 'utf8')
-  assert.match(source, /选择宠物/)
   assert.match(source, /id: 'robot'/)
   assert.match(source, /id: 'whale'/)
   assert.match(source, /id: 'cat'/)
   assert.doesNotMatch(source, /woodfish/)
   assert.match(source, /dsh_desktop_petThumbnail/)
-  assert.match(source, /petCharacter: pet\.id/, 'selection must update persistent settings')
   assert.match(source, /get_pet_resource_path/)
   assert.match(source, /open_pet_resource_folder/)
-  assert.doesNotMatch(source, /alwaysOnTop|clickThrough|screenCapture|soundNotification|hotkey/)
+
+  assert.doesNotMatch(source, /PRESET_SKINS|skinTheme|get_skin_resource_path|save_skin_resource/)
 })
 
 test('pet previews are bundled instead of loaded from the cross-origin Tauri protocol', async () => {

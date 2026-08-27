@@ -12,6 +12,7 @@ const PETS: Array<{ id: DesktopSettings['petCharacter']; name: DesktopKey; descr
   { id: 'whale', name: 'settings.petCharacter.whale', description: 'settings.petCharacter.whaleDesc', image: whalePreview },
   { id: 'cat', name: 'settings.petCharacter.cat', description: 'settings.petCharacter.catDesc', image: catPreview },
 ]
+
 const invoke = (command: string, args?: Record<string, unknown>) => (window as unknown as {
   __TAURI_INTERNALS__?: { invoke?: (command: string, args?: Record<string, unknown>) => Promise<unknown> }
 }).__TAURI_INTERNALS__?.invoke?.(command, args)
@@ -27,12 +28,10 @@ export const DesktopSettingsSection: React.FC<DesktopSettingsSectionProps> = ({ 
     let cancelled = false
     void Promise.resolve(invoke('list_pet_resources')).then(async (names) => {
       if (!Array.isArray(names) || cancelled) return
-      const pets = await Promise.all(
-        (names as string[]).map(async (name) => ({
-          name,
-          preview: (await Promise.resolve(invoke('read_pet_resource', { name }))) as string,
-        })),
-      )
+      const pets = await Promise.all((names as string[]).map(async (name) => ({
+        name,
+        preview: (await Promise.resolve(invoke('read_pet_resource', { name }))) as string,
+      })))
       if (!cancelled) setCustomPets(pets)
     })
     return () => { cancelled = true }
@@ -43,7 +42,7 @@ export const DesktopSettingsSection: React.FC<DesktopSettingsSectionProps> = ({ 
       <div className="dsh_desktop_petPageHeader">
         <div>
           <h2 className="dsh_desktop_settingsTitle">宠物</h2>
-          <p className="dsh_desktop_settingsSubtitle">宠物会管理对话，并突出显示需要关注的事项</p>
+          <p className="dsh_desktop_settingsSubtitle">宠物会感知 Agent 状态，并突出显示需要关注的事项</p>
         </div>
         <button className="dsh_desktop_petToolbarButton" type="button" onClick={() => updateDesktopSettings({ petEnabled: !settings.petEnabled })}>
           {settings.petEnabled ? '收起宠物' : '显示宠物'}
@@ -76,9 +75,7 @@ export const DesktopSettingsSection: React.FC<DesktopSettingsSectionProps> = ({ 
           const selected = settings.petCharacter === id
           return (
             <div className={`dsh_desktop_petRow${selected ? ' is-selected' : ''}`} role="listitem" key={id}>
-              {pet.preview
-                ? <img className="dsh_desktop_petThumbnail" src={pet.preview} alt="" />
-                : <div className="dsh_desktop_petThumbnailPlaceholder">🐾</div>}
+              {pet.preview ? <img className="dsh_desktop_petThumbnail" src={pet.preview} alt="" /> : <div className="dsh_desktop_petThumbnailPlaceholder">🐾</div>}
               <div className="dsh_desktop_petMeta">
                 <div className="dsh_desktop_petName">{pet.name}</div>
                 <div className="dsh_desktop_petDescription">自定义宠物</div>
@@ -98,8 +95,11 @@ export const DesktopSettingsSection: React.FC<DesktopSettingsSectionProps> = ({ 
       <div className="dsh_desktop_petAppearance">
         <div className="dsh_desktop_settingsLabel">外观</div>
         <div className="dsh_desktop_settingsCard dsh_desktop_petSizeRow">
-          <div><div className="dsh_desktop_settingsLabel">宠物大小</div><div className="dsh_desktop_settingsDesc">调整宠物大小</div></div>
-          <input className="dsh_desktop_settingsSlider" aria-label="宠物大小" type="range" min="60" max="140" step="5" value={settings.petSize} onChange={(event) => updateDesktopSettings({ petSize: Number(event.target.value) })} />
+          <div><div className="dsh_desktop_settingsLabel">宠物大小</div><div className="dsh_desktop_settingsDesc">调整桌面宠物比例大小</div></div>
+          <div className="dsh_desktop_settingsSliderContainer">
+            <input className="dsh_desktop_settingsSlider" aria-label="宠物大小" type="range" min="60" max="140" step="5" value={settings.petSize} onChange={(event) => updateDesktopSettings({ petSize: Number(event.target.value) })} />
+            <span className="dsh_desktop_settingsSliderValue">{settings.petSize}%</span>
+          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 /**
- * Desktop & Pet settings store with LocalStorage persistence and bridge sync.
+ * Desktop pet settings store with LocalStorage persistence and bridge sync.
  */
 
 export interface DesktopSettings {
@@ -32,9 +32,10 @@ function loadInitialSettings(): DesktopSettings {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) return { ...DEFAULT_SETTINGS }
     const parsed = JSON.parse(raw) as Partial<DesktopSettings>
-    const settings = {
-      ...DEFAULT_SETTINGS,
-      ...parsed,
+    const settings: DesktopSettings = {
+      petEnabled: typeof parsed.petEnabled === 'boolean' ? parsed.petEnabled : DEFAULT_SETTINGS.petEnabled,
+      petCharacter: typeof parsed.petCharacter === 'string' ? parsed.petCharacter : DEFAULT_SETTINGS.petCharacter,
+      petSize: typeof parsed.petSize === 'number' ? Math.max(60, Math.min(140, parsed.petSize)) : DEFAULT_SETTINGS.petSize,
     }
     // Migrate the retired wooden-fish character to the default companion.
     if (settings.petCharacter === 'woodfish') settings.petCharacter = DEFAULT_SETTINGS.petCharacter
@@ -90,7 +91,7 @@ export function syncDesktopSettingsToHost(settings: DesktopSettings): void {
     const bridge = (window as unknown as { __DSH_DESKTOP_BRIDGE__?: { syncSettings?: (settings: DesktopSettings) => void } }).__DSH_DESKTOP_BRIDGE__
     if (bridge?.syncSettings) {
       try {
-        bridge.syncSettings(currentSettings)
+        bridge.syncSettings(settings)
       } catch {
         // bridge invocation failure is non-fatal
       }
