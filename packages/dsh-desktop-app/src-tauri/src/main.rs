@@ -221,7 +221,6 @@ fn sync_desktop_settings(app: AppHandle, settings: DesktopSettingsPayload) -> Re
         let character = match settings.pet_character.as_str() {
             "whale" => "whale".to_string(),
             "cat" => "cat".to_string(),
-            "woodfish" => "woodfish".to_string(),
             custom if custom.starts_with("custom:") => custom.to_string(),
             _ => "robot".to_string(),
         };

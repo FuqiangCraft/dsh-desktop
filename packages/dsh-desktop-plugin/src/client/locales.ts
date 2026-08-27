@@ -37,11 +37,9 @@ export const zh = {
   'settings.petCharacter.robot': '蓝焰机器人',
   'settings.petCharacter.whale': '深海小鲸鱼',
   'settings.petCharacter.cat': '星际小蓝猫',
-  'settings.petCharacter.woodfish': '赛博电子木鱼',
   'settings.petCharacter.robotDesc': '灵动可靠的原生 AI 桌面伙伴。',
   'settings.petCharacter.whaleDesc': '安静陪伴，适合专注工作的深海朋友。',
   'settings.petCharacter.catDesc': '好奇敏捷，时刻关注 Agent 动态。',
-  'settings.petCharacter.woodfishDesc': '功德 +1，给繁忙工作流一点赛博禅意。',
 } satisfies Record<string, string>
 
 /** The `desktop` namespace key union. */
@@ -81,9 +79,7 @@ export const en: Record<DesktopKey, string> = {
   'settings.petCharacter.robot': 'Blueflare Robot',
   'settings.petCharacter.whale': 'Deep-sea Whale',
   'settings.petCharacter.cat': 'Starlight Cat',
-  'settings.petCharacter.woodfish': 'Cyber Wooden Fish',
   'settings.petCharacter.robotDesc': 'The lively and dependable original AI companion.',
   'settings.petCharacter.whaleDesc': 'A calm deep-sea friend for focused work.',
   'settings.petCharacter.catDesc': 'Curious, nimble, and attentive to every agent update.',
-  'settings.petCharacter.woodfishDesc': 'Cyber zen for busy workflows. Merit +1.',
 }

@@ -4,7 +4,6 @@ import { getDesktopSettings, subscribeDesktopSettings, updateDesktopSettings, ty
 import robotPreview from '../assets/dsh-companion.png'
 import whalePreview from '../assets/dsh-companion-whale.png'
 import catPreview from '../assets/dsh-companion-cat.png'
-import woodfishPreview from '../assets/dsh-companion-woodfish.png'
 
 export interface DesktopSettingsSectionProps { t: (key: DesktopKey) => string; close?: () => void }
 
@@ -12,7 +11,6 @@ const PETS: Array<{ id: DesktopSettings['petCharacter']; name: DesktopKey; descr
   { id: 'robot', name: 'settings.petCharacter.robot', description: 'settings.petCharacter.robotDesc', image: robotPreview },
   { id: 'whale', name: 'settings.petCharacter.whale', description: 'settings.petCharacter.whaleDesc', image: whalePreview },
   { id: 'cat', name: 'settings.petCharacter.cat', description: 'settings.petCharacter.catDesc', image: catPreview },
-  { id: 'woodfish', name: 'settings.petCharacter.woodfish', description: 'settings.petCharacter.woodfishDesc', image: woodfishPreview },
 ]
 const invoke = (command: string, args?: Record<string, unknown>) => (window as unknown as {
   __TAURI_INTERNALS__?: { invoke?: (command: string, args?: Record<string, unknown>) => Promise<unknown> }

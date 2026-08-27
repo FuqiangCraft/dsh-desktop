@@ -23,7 +23,7 @@ test('settings UI offers selectable companion characters', async () => {
   assert.match(source, /id: 'robot'/)
   assert.match(source, /id: 'whale'/)
   assert.match(source, /id: 'cat'/)
-  assert.match(source, /id: 'woodfish'/)
+  assert.doesNotMatch(source, /woodfish/)
   assert.match(source, /dsh_desktop_petThumbnail/)
   assert.match(source, /petCharacter: pet\.id/, 'selection must update persistent settings')
   assert.match(source, /get_pet_resource_path/)

@@ -5,7 +5,7 @@
 export interface DesktopSettings {
   /** Whether the desktop pet / companion floating widget is enabled. */
   petEnabled: boolean
-  /** Selected character: one of 'robot' | 'whale' | 'cat' | 'woodfish', or 'custom:<name>' for a PNG in ~/.dsh/pets. */
+  /** Selected character: one of 'robot' | 'whale' | 'cat', or 'custom:<name>' for a PNG in ~/.dsh/pets. */
   petCharacter: string
   /** Character size as a percentage of the default sprite size. */
   petSize: number
@@ -32,10 +32,13 @@ function loadInitialSettings(): DesktopSettings {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) return { ...DEFAULT_SETTINGS }
     const parsed = JSON.parse(raw) as Partial<DesktopSettings>
-    return {
+    const settings = {
       ...DEFAULT_SETTINGS,
       ...parsed,
     }
+    // Migrate the retired wooden-fish character to the default companion.
+    if (settings.petCharacter === 'woodfish') settings.petCharacter = DEFAULT_SETTINGS.petCharacter
+    return settings
   } catch {
     return { ...DEFAULT_SETTINGS }
   }

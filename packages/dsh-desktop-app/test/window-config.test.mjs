@@ -75,7 +75,7 @@ test('companion pet floating window and frontend exist', async () => {
   assert.match(petHtml, /__DSH_SET_PET_CHARACTER__/, 'pet.html must expose character switching')
   assert.match(petHtml, /__DSH_SET_PET_SIZE__/, 'pet.html must expose size control')
   assert.doesNotMatch(petHtml, /capsule-wrapper|pixel-wrapper|bot-wrapper/, 'legacy widget styles must be removed')
-  for (const asset of ['dsh-companion.png', 'dsh-companion-whale.png', 'dsh-companion-cat.png', 'dsh-companion-woodfish.png']) {
+  for (const asset of ['dsh-companion.png', 'dsh-companion-whale.png', 'dsh-companion-cat.png']) {
     assert.ok(existsSync(new URL(`../frontend/${asset}`, import.meta.url)), `${asset} must exist`)
   }
 
