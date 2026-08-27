@@ -111,7 +111,15 @@ fn restore_main_window(app: &AppHandle, new_chat: bool) {
         }
         let _ = window.set_focus();
         if new_chat {
-            let _ = window.eval("window.__DSH_DESKTOP_NEW_CHAT__?.()");
+            let win = window.clone();
+            tauri::async_runtime::spawn(async move {
+                let _ = win.eval("window.__DSH_DESKTOP_NEW_CHAT__?.()");
+                #[cfg(target_os = "linux")]
+                {
+                    thread::sleep(Duration::from_millis(150));
+                    let _ = win.eval("window.__DSH_DESKTOP_NEW_CHAT__?.()");
+                }
+            });
         }
     }
 }
