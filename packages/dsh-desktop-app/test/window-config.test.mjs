@@ -11,7 +11,7 @@ test('tauri configuration has valid productName and identifier', async () => {
 
   assert.equal(config.productName, 'DSH Desktop')
   assert.equal(config.identifier, 'com.deepseek.harness.desktop')
-  assert.equal(config.version, '0.1.1')
+  assert.equal(config.version, '0.2.0')
   assert.equal(config.bundle.createUpdaterArtifacts, true)
   assert.deepEqual(config.plugins?.updater?.endpoints, [
     'https://github.com/FuqiangCraft/dsh-desktop/releases/latest/download/latest.json',
