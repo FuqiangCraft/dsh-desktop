@@ -39,4 +39,19 @@ test('desktop boot pins the in-app directory browser instead of a detached nativ
   assert.match(patch, /id: directory-picker\s+disabled: true/)
   assert.match(patch, /@deepseek-ai\/dsh-host-directory-picker-browse/)
   assert.match(patch, /@deepseek-ai\/dsh-client-ui-directory-picker-browse/)
+  assert.match(patch, /id: web-runtime\s+config:\s+printUrl: false/)
+  assert.match(main, /\.env\("BROWSER", "none"\)/)
+  assert.match(main, /\.stdout\(std::process::Stdio::null\(\)\)/)
+  assert.match(main, /\.stderr\(std::process::Stdio::null\(\)\)/)
+})
+
+test('desktop app is single-instance and restores the existing window', async () => {
+  const cargo = await readFile(new URL('../src-tauri/Cargo.toml', import.meta.url), 'utf8')
+  const main = await readFile(new URL('../src-tauri/src/main.rs', import.meta.url), 'utf8')
+
+  assert.match(cargo, /tauri-plugin-single-instance = "2"/)
+  const singleInstance = main.indexOf('.plugin(tauri_plugin_single_instance::init')
+  const dialog = main.indexOf('.plugin(tauri_plugin_dialog::init')
+  assert.ok(singleInstance >= 0 && singleInstance < dialog, 'single-instance plugin must be registered first')
+  assert.match(main, /tauri_plugin_single_instance::init\(\|app, _, _\| \{\s*restore_main_window\(app, false\)/)
 })

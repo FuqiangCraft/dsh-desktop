@@ -86,6 +86,23 @@ test('companion pet floating window and frontend exist', async () => {
   assert.match(main, /\.always_on_top\(true\)/)
 })
 
+test('native companion settings work without the web plugin', async () => {
+  const settingsPath = new URL('../frontend/pet-settings.html', import.meta.url)
+  assert.ok(existsSync(settingsPath), 'desktop app must bundle its own pet settings page')
+  const settingsHtml = await readFile(settingsPath, 'utf8')
+  const main = await readFile(new URL('../src-tauri/src/main.rs', import.meta.url), 'utf8')
+
+  assert.match(settingsHtml, /get_desktop_settings/)
+  assert.match(settingsHtml, /sync_desktop_settings/)
+  assert.match(settingsHtml, /petEnabled:true,petCharacter:'robot',petSize:100/)
+  assert.match(main, /impl Default for DesktopSettingsPayload/)
+  assert.match(main, /pet_enabled: true/)
+  assert.match(main, /pet_character: "robot"\.to_string\(\)/)
+  assert.match(main, /"pet-settings"/)
+  assert.match(main, /WebviewUrl::App\("pet-settings\.html"\.into\(\)\)/)
+  assert.match(main, /desktop-settings\.json/)
+})
+
 test('desktop companion stays off the Windows taskbar', async () => {
   const main = await readFile(new URL('../src-tauri/src/main.rs', import.meta.url), 'utf8')
   const petWindow = main.match(/WebviewWindowBuilder::new\([\s\S]*?"pet"[\s\S]*?\.build\(\)\?/)?.[0] ?? ''
@@ -132,6 +149,7 @@ test('capability grants both main and pet windows IPC access to all commands', a
     'sync_recent_sessions',
     'retry_spawn_dsh',
     'sync_desktop_settings',
+    'get_desktop_settings',
     'get_pet_resource_path',
     'open_pet_resource_folder',
     'list_pet_resources',

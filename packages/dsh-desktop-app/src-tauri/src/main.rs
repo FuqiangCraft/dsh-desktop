@@ -11,6 +11,9 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::{Duration, Instant};
 
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
 use base64::{engine::general_purpose::STANDARD, Engine};
 use serde::{Deserialize, Serialize};
 use tauri::{
@@ -59,6 +62,13 @@ fn spawn_server(patch_path: &Path) -> Option<Child> {
     command
         .env("BROWSER", "none")
         .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null());
+
+    #[cfg(target_os = "windows")]
+    command.creation_flags(0x08000000);
+
+    command
         .spawn()
         .ok()
 }
@@ -131,13 +141,22 @@ struct RecentSessionPayload {
     pub title: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[allow(dead_code)]
 struct DesktopSettingsPayload {
     pub pet_enabled: bool,
     pub pet_character: String,
     pub pet_size: u32,
+}
+
+impl Default for DesktopSettingsPayload {
+    fn default() -> Self {
+        Self {
+            pet_enabled: true,
+            pet_character: "robot".to_string(),
+            pet_size: 100,
+        }
+    }
 }
 
 struct RecentMenu(Submenu<Wry>);
@@ -172,6 +191,25 @@ fn read_pet_position(app: &AppHandle) -> Option<SavedPetPosition> {
     std::fs::read_to_string(file)
         .ok()
         .and_then(|raw| serde_json::from_str(&raw).ok())
+}
+
+fn desktop_settings_file(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    let dir = app.path().app_config_dir().map_err(|error| error.to_string())?;
+    std::fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
+    Ok(dir.join("desktop-settings.json"))
+}
+
+fn read_desktop_settings(app: &AppHandle) -> DesktopSettingsPayload {
+    desktop_settings_file(app)
+        .ok()
+        .and_then(|file| std::fs::read_to_string(file).ok())
+        .and_then(|raw| serde_json::from_str(&raw).ok())
+        .unwrap_or_default()
+}
+
+#[tauri::command]
+fn get_desktop_settings(app: AppHandle) -> DesktopSettingsPayload {
+    read_desktop_settings(&app)
 }
 
 /// Keep the tray's pet toggle label in sync with the pet window's visibility.
@@ -219,24 +257,32 @@ fn sync_recent_sessions(
 
 #[tauri::command]
 fn sync_desktop_settings(app: AppHandle, settings: DesktopSettingsPayload) -> Result<(), String> {
+    let normalized = DesktopSettingsPayload {
+        pet_enabled: settings.pet_enabled,
+        pet_character: match settings.pet_character.as_str() {
+            "whale" => "whale".to_string(),
+            "cat" => "cat".to_string(),
+            custom if custom.starts_with("custom:") => custom.to_string(),
+            _ => "robot".to_string(),
+        },
+        pet_size: settings.pet_size.clamp(60, 140),
+    };
+    let file = desktop_settings_file(&app)?;
+    std::fs::write(&file, serde_json::to_string_pretty(&normalized).map_err(|error| error.to_string())?)
+        .map_err(|error| error.to_string())?;
     if let Some(pet_window) = app.get_webview_window("pet") {
-        if settings.pet_enabled {
+        if normalized.pet_enabled {
             let _ = pet_window.show();
         } else {
             let _ = pet_window.hide();
         }
         sync_pet_toggle_label(&app);
-        let character = match settings.pet_character.as_str() {
-            "whale" => "whale".to_string(),
-            "cat" => "cat".to_string(),
-            custom if custom.starts_with("custom:") => custom.to_string(),
-            _ => "robot".to_string(),
-        };
+        let character = normalized.pet_character;
         let character_json =
             serde_json::to_string(&character).unwrap_or_else(|_| "\"robot\"".to_string());
         let _ = pet_window.eval(format!(
             "window.__DSH_SET_PET_CHARACTER__?.({character_json}); window.__DSH_SET_PET_SIZE__?.({});",
-            settings.pet_size.clamp(60, 140)
+            normalized.pet_size
         ));
     }
     Ok(())
@@ -424,12 +470,16 @@ async fn check_for_updates(app: AppHandle) -> Result<bool, String> {
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _, _| {
+            restore_main_window(app, false);
+        }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             sync_recent_sessions,
             retry_spawn_dsh,
             sync_desktop_settings,
+            get_desktop_settings,
             get_pet_resource_path,
             open_pet_resource_folder,
             list_pet_resources,
@@ -504,10 +554,20 @@ fn main() {
                 pet_builder = pet_builder.center();
             }
 
+            let settings = read_desktop_settings(app.handle());
             let pet_window = pet_builder.build()?;
-            let _ = pet_window.show();
+            if settings.pet_enabled {
+                let _ = pet_window.show();
+            } else {
+                let _ = pet_window.hide();
+            }
             let _ = pet_window.unminimize();
-            let _ = pet_window.set_focus();
+            let character_json = serde_json::to_string(&settings.pet_character)
+                .unwrap_or_else(|_| "\"robot\"".to_string());
+            let _ = pet_window.eval(format!(
+                "window.__DSH_SET_PET_CHARACTER__?.({character_json}); window.__DSH_SET_PET_SIZE__?.({});",
+                settings.pet_size.clamp(60, 140)
+            ));
 
             if let Some(saved) = read_pet_position(app.handle()) {
                 if let Ok(Some(monitor)) = app.monitor_from_point(saved.x as f64, saved.y as f64) {
@@ -524,6 +584,7 @@ fn main() {
             let recent = Submenu::with_id_and_items(app, "recent", "最近会话", true, &[&recent_empty])?;
             let show = MenuItem::with_id(app, "show", "打开 DSH Desktop", true, None::<&str>)?;
             let pet_toggle = MenuItem::with_id(app, "pet-toggle", "隐藏宠物", true, None::<&str>)?;
+            let pet_settings = MenuItem::with_id(app, "pet-settings", "宠物设置...", true, None::<&str>)?;
             let new_chat = MenuItem::with_id(app, "new-chat", "新建会话", true, None::<&str>)?;
             let check_update = MenuItem::with_id(app, "check-update", "检查更新...", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
@@ -536,6 +597,7 @@ fn main() {
                     &separator_top,
                     &show,
                     &pet_toggle,
+                    &pet_settings,
                     &new_chat,
                     &check_update,
                     &separator_bottom,
@@ -586,6 +648,25 @@ fn main() {
                                 let _ = pet_window.set_focus();
                             }
                             sync_pet_toggle_label(app);
+                        }
+                    }
+                    "pet-settings" => {
+                        if let Some(window) = app.get_webview_window("pet-settings") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        } else if let Ok(window) = tauri::WebviewWindowBuilder::new(
+                            app,
+                            "pet-settings",
+                            WebviewUrl::App("pet-settings.html".into()),
+                        )
+                        .title("DSH Desktop 宠物设置")
+                        .inner_size(460.0, 520.0)
+                        .resizable(false)
+                        .center()
+                        .build()
+                        {
+                            let _ = window.show();
+                            let _ = window.set_focus();
                         }
                     }
                     "new-chat" => {

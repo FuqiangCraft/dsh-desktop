@@ -9,6 +9,7 @@ fn main() {
                 "sync_recent_sessions",
                 "retry_spawn_dsh",
                 "sync_desktop_settings",
+                "get_desktop_settings",
                 "get_pet_resource_path",
                 "open_pet_resource_folder",
                 "list_pet_resources",
