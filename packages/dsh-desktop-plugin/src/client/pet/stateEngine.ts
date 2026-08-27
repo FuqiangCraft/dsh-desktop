@@ -27,6 +27,15 @@ export function setupPetStateEngine(sessions: SessionsListFace, t: T): () => voi
 
   const dispatchToHost = (state: PetLiveState, text?: string) => {
     if (typeof window === 'undefined') return
+    const bridge = (window as unknown as { __DSH_DESKTOP_BRIDGE__?: { updatePetState?: (state: string, text: string) => void } }).__DSH_DESKTOP_BRIDGE__
+    if (bridge?.updatePetState) {
+      try {
+        bridge.updatePetState(state, text ?? '')
+        return
+      } catch {
+        // ignore
+      }
+    }
     const invoke = window.__TAURI_INTERNALS__?.invoke
     if (typeof invoke === 'function') {
       void invoke('update_pet_state', { state, text: text ?? '' })

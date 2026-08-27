@@ -6,17 +6,20 @@
   "type": "module",
   "scripts": {
     "build": "pnpm -r run build",
+    "dev:electron": "pnpm --filter @dsh-community/dsh-desktop-electron dev",
     "dev:plugin": "pnpm --filter @mixian/dsh-desktop-plugin dev",
     "dev:app": "pnpm --filter @dsh-community/dsh-desktop-app dev",
     "dev:hud": "pnpm --filter @dsh-community/dsh-desktop-app dev:hud",
     "tauri": "pnpm --filter @dsh-community/dsh-desktop-app tauri",
-    "lint": "oxlint --ignore-pattern '**/lib/**' --ignore-pattern '**/target/**' .",
+    "package:electron": "pnpm --filter @dsh-community/dsh-desktop-electron package",
+    "lint": "oxlint --ignore-pattern '**/lib/**' --ignore-pattern '**/dist/**' --ignore-pattern '**/target/**' .",
     "typecheck": "pnpm -r --if-present run typecheck",
-    "test": "node --test test/license.test.mjs test/metadata.test.mjs packages/dsh-desktop-app/test/startup-config.test.mjs packages/dsh-desktop-app/test/window-config.test.mjs packages/dsh-desktop-plugin/test/locales.test.mjs packages/dsh-desktop-plugin/test/config.test.mjs packages/dsh-desktop-plugin/test/screen-capture.test.mjs packages/dsh-desktop-plugin/test/notifier.test.mjs packages/dsh-desktop-plugin/test/settings.test.mjs packages/dsh-desktop-plugin/test/pet-state.test.mjs",
+    "test": "node --test test/license.test.mjs test/metadata.test.mjs packages/dsh-desktop-electron/test/electron-structure.test.mjs packages/dsh-desktop-electron/test/port-probe.test.mjs packages/dsh-desktop-electron/test/profile-manager.test.mjs packages/dsh-desktop-electron/test/settings-store.test.mjs packages/dsh-desktop-app/test/startup-config.test.mjs packages/dsh-desktop-app/test/window-config.test.mjs packages/dsh-desktop-plugin/test/locales.test.mjs packages/dsh-desktop-plugin/test/config.test.mjs packages/dsh-desktop-plugin/test/screen-capture.test.mjs packages/dsh-desktop-plugin/test/notifier.test.mjs packages/dsh-desktop-plugin/test/settings.test.mjs packages/dsh-desktop-plugin/test/pet-state.test.mjs",
     "cargo:check": "cargo check --manifest-path packages/dsh-desktop-app/src-tauri/Cargo.toml",
     "cargo:test": "cargo test --manifest-path packages/dsh-desktop-app/src-tauri/Cargo.toml",
+    "verify:runtime": "node scripts/verify-runtime-closure.mjs",
     "verify:bundle": "node scripts/verify-bundle.mjs",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm cargo:check && pnpm cargo:test && pnpm --filter @mixian/dsh-desktop-plugin build && pnpm verify:bundle"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm cargo:check && pnpm cargo:test && pnpm --filter @mixian/dsh-desktop-plugin build && pnpm --filter @dsh-community/dsh-desktop-electron build && pnpm verify:runtime && pnpm verify:bundle"
   },
   "keywords": [
     "deepseek",

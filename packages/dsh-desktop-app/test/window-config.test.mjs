@@ -172,3 +172,49 @@ test('capability grants both main and pet windows IPC access to all commands', a
     assert.match(buildRs, new RegExp(`"${command}"`), `build.rs must declare ${command}`)
   }
 })
+
+test('windows bundle is self-contained with embedded webview2 bootstrapper and user-mode nsis', async () => {
+  const config = JSON.parse(
+    await readFile(new URL('../src-tauri/tauri.conf.json', import.meta.url), 'utf8'),
+  )
+
+  assert.equal(
+    config.bundle.windows?.webviewInstallMode?.type,
+    'embedBootstrapper',
+    'WebView2 bootstrapper must be embedded to support offline/clean Windows machines',
+  )
+  assert.equal(
+    config.bundle.windows?.nsis?.installMode,
+    'currentUser',
+    'NSIS installer must use currentUser mode to avoid requiring elevated administrator rights',
+  )
+
+  const cargoConfig = await readFile(new URL('../src-tauri/.cargo/config.toml', import.meta.url), 'utf8')
+  assert.match(
+    cargoConfig,
+    /\+crt-static/,
+    'cargo config must enable static CRT linking (+crt-static) on MSVC',
+  )
+})
+
+test('server child termination is silent and non-blocking without terminal windows', async () => {
+  const main = await readFile(new URL('../src-tauri/src/main.rs', import.meta.url), 'utf8')
+  const terminateChild = main.match(/fn terminate_child[\s\S]*?\n}/)?.[0] ?? ''
+
+  assert.match(
+    terminateChild,
+    /0x08000000/,
+    'taskkill must specify CREATE_NO_WINDOW (0x08000000) to prevent black terminal popup on exit',
+  )
+  assert.match(
+    terminateChild,
+    /try_wait/,
+    'terminate_child must check child.try_wait() before invoking taskkill to avoid hanging on dead PIDs',
+  )
+  assert.match(
+    terminateChild,
+    /child\.kill\(\)/,
+    'terminate_child must kill child process cleanly',
+  )
+})
+

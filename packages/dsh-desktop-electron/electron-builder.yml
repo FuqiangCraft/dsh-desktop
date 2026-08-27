@@ -1,0 +1,40 @@
+appId: com.fuqiangcraft.dsh.desktop
+productName: DeepSeek Harness Desktop
+copyright: Copyright © 2026 FuqiangCraft
+
+directories:
+  output: ../../dist-electron
+  buildResources: build
+
+files:
+  - dist/**/*
+  - assets/**/*
+  - package.json
+  - node_modules/**/*
+
+asar: true
+asarUnpack:
+  - '**/node_modules/node-pty/**/*'
+  - '**/node_modules/koffi/**/*'
+  - '**/node_modules/@deepseek-ai/dsh-subprocess-local/**/*'
+
+win:
+  icon: assets/icons/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: zip
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+  shortcutName: DeepSeek Harness Desktop
+  artifactName: DSH-Desktop-${version}-x64-Setup.${ext}
+
+zip:
+  artifactName: DSH-Desktop-${version}-x64-Portable.zip

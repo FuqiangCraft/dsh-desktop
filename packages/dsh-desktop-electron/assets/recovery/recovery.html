@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DeepSeek Harness Desktop · 启动恢复</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --danger: #ef4444;
+      --border: rgba(255, 255, 255, 0.1);
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      max-width: 640px;
+      width: 100%;
+      padding: 32px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+    .error-box {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 8px;
+      padding: 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 13px;
+      color: #fca5a5;
+      overflow-x: auto;
+      max-height: 180px;
+      margin-bottom: 24px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    button {
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border-color: var(--border);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.25);
+    }
+    .status-text {
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div class="icon">⚠️</div>
+      <div>
+        <h1>DSH Desktop 运行环境异常</h1>
+        <div class="subtitle">内置 DeepSeek Harness Host 无法正常启动或 Profile 配置损坏</div>
+      </div>
+    </div>
+
+    <div class="error-box" id="errorBox">正在检测异常信息…</div>
+
+    <div class="actions">
+      <button class="btn-primary" id="retryBtn">重试启动</button>
+      <button class="btn-secondary" id="openDirBtn">打开 Profile 目录</button>
+      <button class="btn-danger" id="resetBtn">重置桌面 Profile</button>
+    </div>
+
+    <div class="status-text" id="statusText"></div>
+  </div>
+
+  <script>
+    const errorBox = document.getElementById('errorBox')
+    const retryBtn = document.getElementById('retryBtn')
+    const openDirBtn = document.getElementById('openDirBtn')
+    const resetBtn = document.getElementById('resetBtn')
+    const statusText = document.getElementById('statusText')
+
+    const params = new URLSearchParams(window.location.search)
+    const err = params.get('error')
+    errorBox.textContent = err || '未捕获的具体错误'
+
+    const bridge = window.__DSH_DESKTOP_BRIDGE__
+
+    retryBtn.addEventListener('click', async () => {
+      statusText.textContent = '正在重新启动 DSH Host…'
+      retryBtn.disabled = true
+      try {
+        const ok = await bridge?.retryBoot()
+        if (!ok) {
+          statusText.textContent = '重试启动失败，请检查错误日志或重置 Profile。'
+        }
+      } catch (e) {
+        statusText.textContent = '错误: ' + (e?.message || String(e))
+      } finally {
+        retryBtn.disabled = false
+      }
+    })
+
+    openDirBtn.addEventListener('click', async () => {
+      await bridge?.openProfileDir()
+    })
+
+    resetBtn.addEventListener('click', async () => {
+      if (!confirm('确定要重置桌面 Profile 吗？这将恢复初始插件和 patch 配置。')) return
+      statusText.textContent = '正在重置 Profile…'
+      resetBtn.disabled = true
+      try {
+        const ok = await bridge?.resetProfile()
+        if (ok) {
+          statusText.textContent = 'Profile 重置完成，正在启动…'
+        } else {
+          statusText.textContent = '重置失败，请手动检查 Profile 目录。'
+        }
+      } catch (e) {
+        statusText.textContent = '重置失败: ' + (e?.message || String(e))
+      } finally {
+        resetBtn.disabled = false
+      }
+    })
+  </script>
+</body>
+</html>

@@ -73,23 +73,27 @@ fn spawn_server(patch_path: &Path) -> Option<Child> {
         .ok()
 }
 
-/// Terminate the complete DSH process tree.
+/// Terminate the complete DSH process tree silently without terminal popup or hanging.
 fn terminate_child(child: &mut Child) {
-    #[cfg(windows)]
+    #[cfg(target_os = "windows")]
     {
-        let pid = child.id().to_string();
-        let _ = Command::new("taskkill")
-            .args(["/PID", &pid, "/T", "/F"])
-            .stdin(std::process::Stdio::null())
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .status();
+        if let Ok(None) = child.try_wait() {
+            let pid = child.id().to_string();
+            let mut cmd = Command::new("taskkill");
+            cmd.args(["/PID", &pid, "/T", "/F"])
+                .creation_flags(0x08000000)
+                .stdin(std::process::Stdio::null())
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null());
+            let _ = cmd.status();
+        }
+        let _ = child.kill();
     }
-    #[cfg(not(windows))]
+    #[cfg(not(target_os = "windows"))]
     {
         let _ = child.kill();
     }
-    let _ = child.wait();
+    let _ = child.try_wait();
 }
 
 /// Terminate the server child and exit the app.

@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>DSH Desktop Companion</title>
+  <style>
+    *{box-sizing:border-box;user-select:none;-webkit-user-select:none}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:transparent}
+    body{--pet-scale:1;font-family:"Segoe UI",system-ui,sans-serif}
+    .stage{
+      position:relative;
+      width:100%;
+      height:100%;
+      display:grid;
+      place-items:end center;
+      cursor:grab;
+      -webkit-app-region: drag;
+    }
+    .stage:active{cursor:grabbing}
+    .companion{
+      width:calc(136px * var(--pet-scale));
+      height:calc(154px * var(--pet-scale));
+      object-fit:contain;
+      pointer-events:none;
+      transform-origin:50% 86%;
+      animation:breathe 3.4s ease-in-out infinite;
+      transition:filter .18s,transform .18s;
+      -webkit-user-drag: none;
+    }
+    .stage:hover .companion{filter:brightness(1.05);transform:translateY(-2px) scale(1.025)}
+    .status{
+      position:absolute;
+      top:4px;
+      left:50%;
+      max-width:154px;
+      padding:7px 10px;
+      border:1px solid rgba(15,23,42,.1);
+      border-radius:12px;
+      background:rgba(255,255,255,.94);
+      color:#172033;
+      box-shadow:0 8px 24px rgba(15,23,42,.18);
+      font-size:12px;
+      font-weight:600;
+      white-space:nowrap;
+      opacity:0;
+      transform:translate(-50%,5px) scale(.96);
+      transition:opacity .18s,transform .18s;
+      pointer-events:none;
+      -webkit-app-region: no-drag;
+    }
+    .status:after{
+      content:"";
+      position:absolute;
+      left:50%;
+      bottom:-5px;
+      width:9px;
+      height:9px;
+      background:inherit;
+      border-right:1px solid rgba(15,23,42,.1);
+      border-bottom:1px solid rgba(15,23,42,.1);
+      transform:translateX(-50%) rotate(45deg);
+    }
+    .stage:not(.state-idle) .status,.stage.has-status .status,.stage.is-sleeping .status{opacity:1;transform:translate(-50%,0) scale(1)}
+    .state-thinking .companion{animation:think 1.3s ease-in-out infinite}
+    .state-working .companion{animation:work 1s ease-in-out infinite}
+    .state-alert .companion{animation:alert .5s ease-in-out 4}
+    .state-success .companion{animation:dance 2.6s ease-in-out infinite}
+    .stage.is-interacting .companion{animation:petReact .48s cubic-bezier(.2,.9,.25,1)}
+    .stage.is-sleeping .companion{animation:sleep 3.2s ease-in-out infinite;filter:brightness(.82) saturate(.82)}
+    .stage.is-waking .companion{animation:wake .7s ease}
+    .stage.is-spinning .companion{animation:spinDizzy 1.8s ease-in-out}
+    @keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+    @keyframes think{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(3deg) translateY(-4px)}}
+    @keyframes work{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+    @keyframes alert{0%,100%{transform:rotate(0)}35%{transform:rotate(-7deg)}70%{transform:rotate(7deg)}}
+    @keyframes dance{0%,100%{transform:rotate(0deg) translateY(0) scale(1)}10%{transform:rotate(-16deg) translateY(-6px) scale(1.05)}22%{transform:rotate(16deg) translateY(-12px) scale(1.07)}34%{transform:rotate(-16deg) translateY(-6px) scale(1.05)}46%{transform:rotate(16deg) translateY(-12px) scale(1.07)}58%{transform:rotate(0deg) translateY(-18px) scale(1.1)}72%{transform:rotate(-8deg) translateY(-6px) scale(1.04)}86%{transform:rotate(8deg) translateY(-3px) scale(1.02)}}
+    @keyframes sleep{0%,100%{transform:translateY(1px) scale(1)}50%{transform:translateY(5px) scale(.97)}}
+    @keyframes wake{0%{transform:scaleY(1)}40%{transform:scaleY(1.14)}70%{transform:scaleY(.95)}100%{transform:scaleY(1)}}
+    @keyframes spinDizzy{0%{transform:perspective(400px) rotateY(0deg) rotate(0deg) translateX(0)}20%{transform:perspective(400px) rotateY(360deg) rotate(0deg) translateX(0)}40%{transform:perspective(400px) rotateY(360deg) rotate(-6deg) translateX(-4px)}55%{transform:perspective(400px) rotateY(360deg) rotate(-4deg) translateX(4px)}70%{transform:perspective(400px) rotateY(360deg) rotate(6deg) translateX(-3px)}85%{transform:perspective(400px) rotateY(360deg) rotate(-6deg) translateX(3px)}100%{transform:perspective(400px) rotateY(360deg) rotate(0deg) translateX(0)}}
+    @keyframes petReact{0%,100%{transform:rotate(0) scale(1)}35%{transform:rotate(-7deg) scale(.96)}65%{transform:rotate(5deg) scale(1.07)}}
+    @media(prefers-reduced-motion:reduce){.companion{animation:none!important}}
+  </style>
+</head>
+<body>
+  <div class="stage state-idle" id="stage"><div class="status" id="status">随时待命</div><img class="companion" id="companion" src="dsh-companion.png" alt="DSH 桌面伴侣" draggable="false"></div>
+  <script>
+    const stage = document.getElementById('stage')
+    const status = document.getElementById('status')
+    const companion = document.getElementById('companion')
+    const bridge = window.__DSH_DESKTOP_BRIDGE__
+
+    let pointerDownAt = 0, currentCharacter = 'robot', lastInteraction = 0, statusTimer = null, currentCustom = null, sleeping = false, idleTimer = null, clickTimes = []
+    const characters = { robot: 'dsh-companion.png', whale: 'dsh-companion-whale.png', cat: 'dsh-companion-cat.png' }
+
+    function setCharacter(character = 'robot') {
+      if (character.startsWith('custom:')) {
+        const name = character.slice(7)
+        currentCustom = name
+        currentCharacter = 'robot'
+        companion.src = characters.robot
+        if (bridge?.readPetResource) {
+          bridge.readPetResource(name).then(url => {
+            if (url && currentCustom === name) companion.src = url
+          }).catch(() => {})
+        }
+      } else {
+        currentCustom = null
+        currentCharacter = characters[character] ? character : 'robot'
+        companion.src = characters[currentCharacter]
+      }
+    }
+
+    const labels = { idle: '随时待命', thinking: '正在思考…', working: '正在执行…', alert: '需要你的确认', success: '任务已完成' }
+
+    function setState(state = 'idle', text = '') {
+      stage.className = `stage state-${state}`
+      status.textContent = text || labels[state] || labels.idle
+      clearTimeout(statusTimer)
+      stage.classList.remove('has-status')
+      wakePet()
+      if (state === 'idle') scheduleIdleSleep()
+    }
+
+    function setSize(value = 100) {
+      document.body.style.setProperty('--pet-scale', String(Math.max(60, Math.min(140, value)) / 100))
+    }
+
+    window.__DSH_SET_PET_CHARACTER__ = setCharacter
+    window.__DSH_SET_PET_STATE__ = setState
+    window.__DSH_SET_PET_SIZE__ = setSize
+
+    if (bridge) {
+      bridge.onPetCharacter?.(setCharacter)
+      bridge.onPetSize?.(setSize)
+      bridge.onPetState?.(setState)
+    }
+
+    const SLEEP_DELAY = 60000
+    const scheduleIdleSleep = () => {
+      if (idleTimer) clearTimeout(idleTimer)
+      idleTimer = setTimeout(() => {
+        if (stage.classList.contains('state-idle')) startSleep()
+      }, SLEEP_DELAY)
+    }
+
+    const startSleep = () => {
+      if (sleeping) return
+      sleeping = true
+      stage.classList.add('is-sleeping')
+      status.textContent = '睡着啦… zZz'
+      clearTimeout(statusTimer)
+      stage.classList.add('has-status')
+      statusTimer = setTimeout(() => stage.classList.remove('has-status'), 2500)
+    }
+
+    const wakePet = () => {
+      const wasSleeping = sleeping
+      sleeping = false
+      if (idleTimer) {
+        clearTimeout(idleTimer)
+        idleTimer = null
+      }
+      if (stage.classList.contains('is-sleeping')) {
+        stage.classList.remove('is-sleeping')
+        stage.classList.remove('is-waking')
+        void stage.offsetWidth
+        stage.classList.add('is-waking')
+        setTimeout(() => stage.classList.remove('is-waking'), 800)
+      }
+      if (wasSleeping) {
+        status.textContent = '唔…睡醒了'
+        clearTimeout(statusTimer)
+        stage.classList.add('has-status')
+        statusTimer = setTimeout(() => stage.classList.remove('has-status'), 3000)
+      }
+    }
+
+    const interact = () => {
+      const now = Date.now()
+      if (now - lastInteraction < 900) return
+      lastInteraction = now
+      clickTimes.push(now)
+      clickTimes = clickTimes.filter(t => now - t < 3000)
+      wakePet()
+      stage.classList.remove('is-interacting')
+      void stage.offsetWidth
+      stage.classList.add('is-interacting')
+      if (clickTimes.length >= 3 && stage.classList.contains('state-idle')) {
+        clickTimes = []
+        stage.classList.add('is-spinning')
+        status.textContent = '转晕啦…'
+        clearTimeout(statusTimer)
+        stage.classList.add('has-status')
+        statusTimer = setTimeout(() => {
+          stage.classList.remove('is-spinning')
+          stage.classList.remove('has-status')
+        }, 1800)
+      } else {
+        if (currentCharacter === 'cat') {
+          status.textContent = '喵～'
+        } else {
+          status.textContent = currentCharacter === 'whale' ? '呼噜～' : '你好呀'
+        }
+        stage.classList.add('has-status')
+        clearTimeout(statusTimer)
+        statusTimer = setTimeout(() => stage.classList.remove('has-status'), 3000)
+      }
+      setTimeout(() => stage.classList.remove('is-interacting'), 520)
+      scheduleIdleSleep()
+    }
+
+    stage.addEventListener('pointerdown', e => {
+      wakePet()
+      scheduleIdleSleep()
+      if (e.button !== 0) return
+      pointerDownAt = Date.now()
+    })
+
+    stage.addEventListener('pointerup', e => {
+      if (e.button === 0 && Date.now() - pointerDownAt < 350) interact()
+      pointerDownAt = 0
+    })
+
+    stage.addEventListener('contextmenu', e => e.preventDefault())
+    scheduleIdleSleep()
+  </script>
+</body>
+</html>

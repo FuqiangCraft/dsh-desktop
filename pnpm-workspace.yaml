@@ -16,6 +16,21 @@ overrides:
 
 onlyBuiltDependencies:
   - esbuild
+  - electron
+  - koffi
+  - node-pty
+  - protobufjs
+  - electron-winstaller
+  - '@deepseek-ai/dsh-subprocess-local'
+  - '@google/genai'
 
 allowBuilds:
+  '@deepseek-ai/dsh-subprocess-local': true
+  '@google/genai': true
+  electron: true
+  electron-winstaller: true
   esbuild: true
+  koffi: true
+  node-pty: true
+  protobufjs: true
+

@@ -42,6 +42,8 @@ type T = (key: DesktopKey) => string
 /** Typed Native Desktop Bridge interface. */
 export interface DshDesktopBridge {
   notify(payload: { id: string; title: string; kind: DesktopInteractionStatus; label: string }): void
+  syncRecentSessions?(sessions: Array<{ id: string; title: string }>): void
+  updatePetState?(state: string, text: string): void
 }
 
 declare global {
@@ -55,8 +57,9 @@ declare global {
 
 /** Keep the native tray's recent-session submenu aligned with the client store. */
 export function setupTraySessionSync(sessions: SessionsListFace): () => void {
-  const invoke = window.__TAURI_INTERNALS__?.invoke
-  if (typeof invoke !== 'function') return () => {}
+  const bridge = typeof window !== 'undefined' ? window.__DSH_DESKTOP_BRIDGE__ : undefined
+  const invoke = typeof window !== 'undefined' ? window.__TAURI_INTERNALS__?.invoke : undefined
+  if (!bridge?.syncRecentSessions && typeof invoke !== 'function') return () => {}
 
   const update = (): void => {
     const snapshot = sessions.list.getSnapshot()
@@ -65,7 +68,15 @@ export function setupTraySessionSync(sessions: SessionsListFace): () => void {
       .filter((row): row is SessionSummary => row !== undefined)
       .slice(0, 5)
       .map((row) => ({ id: row.id, title: row.displayTitle }))
-    void invoke('sync_recent_sessions', { sessions: recent })
+    if (bridge?.syncRecentSessions) {
+      try {
+        bridge.syncRecentSessions(recent)
+      } catch {
+        // ignore
+      }
+    } else if (typeof invoke === 'function') {
+      void invoke('sync_recent_sessions', { sessions: recent })
+    }
   }
 
   update()
