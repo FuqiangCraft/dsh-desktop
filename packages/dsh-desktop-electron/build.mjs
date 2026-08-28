@@ -43,6 +43,17 @@ await esbuild.build({
   external: ['electron'],
 })
 
+await esbuild.build({
+  entryPoints: [path.join(__dirname, 'src/tray-preload.ts')],
+  outfile: path.join(outDir, 'tray-preload.cjs'),
+  bundle: true,
+  platform: 'node',
+  target: 'node22',
+  format: 'cjs',
+  sourcemap: true,
+  external: ['electron'],
+})
+
 // 3. Build runtime modules for unit testing
 await esbuild.build({
   entryPoints: [
@@ -61,4 +72,4 @@ await esbuild.build({
   sourcemap: true,
 })
 
-console.log('Build completed: dist/main.js, dist/preload.cjs, dist/runtime/*.js')
+console.log('Build completed: dist/main.js, dist/preload.cjs, dist/tray-preload.cjs, dist/runtime/*.js')

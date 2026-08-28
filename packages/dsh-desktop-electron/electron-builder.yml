@@ -1,5 +1,6 @@
 appId: com.fuqiangcraft.dsh.desktop
-productName: DeepSeek Harness 桌面版
+productName: DeepSeek Harness Desktop
+executableName: DeepSeek Harness Desktop
 copyright: Copyright © 2026 FuqiangCraft
 
 directories:
@@ -26,21 +27,25 @@ extraResources:
     filter:
       - '**/*'
 
-# Keep JavaScript dependencies in one archive so Windows installers do not
-# have to create and antivirus-scan tens of thousands of tiny files. Native
-# dependencies are automatically placed in app.asar.unpacked by electron-builder.
+# Keep JavaScript dependencies in one archive so Windows installers extract
+# in 2 seconds instead of creating 40,000 tiny files. ESM packages and native
+# dependencies are unpacked to app.asar.unpacked for filesystem resolution.
 asar: true
 asarUnpack:
-  # The web host resolves these browser bundles to filesystem paths before
-  # emitting modulepreload tags. Keep only the 44 client entry files outside
-  # ASAR; their package code and all other dependencies stay archived.
-  - 'node_modules/@deepseek-ai/**/lib/client.js'
-  - 'node_modules/@mixian/**/lib/client.js'
+  - '**/node_modules/@deepseek-ai/**/*'
+  - '**/node_modules/@mixian/**/*'
+  - '**/node_modules/@vscode/ripgrep-win32-x64/**/*'
+  - '**/node_modules/node-pty/**/*'
+  - '**/node_modules/koffi/**/*'
+  - '**/*.node'
 
 win:
   icon: assets/icons/icon.ico
   artifactName: DSH-Desktop-${version}-x64-Portable.${ext}
   target:
+    - target: dir
+      arch:
+        - x64
     - target: nsis
       arch:
         - x64
@@ -53,5 +58,5 @@ nsis:
   perMachine: false
   allowToChangeInstallationDirectory: true
   deleteAppDataOnUninstall: false
-  shortcutName: DeepSeek Harness 桌面版
+  shortcutName: DeepSeek Harness Desktop
   artifactName: DSH-Desktop-${version}-x64-Setup.${ext}

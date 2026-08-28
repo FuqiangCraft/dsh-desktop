@@ -1,5 +1,6 @@
 import path from 'node:path'
 import fs from 'node:fs'
+import http from 'node:http'
 import { app, ipcMain, Notification, shell } from 'electron'
 import { DesktopSettingsStore, type DesktopSettings } from './runtime/settings-store.ts'
 import { DesktopProfileManager } from './runtime/profile-manager.ts'
@@ -56,6 +57,8 @@ class DesktopApplication {
   private readonly iconPath: string
   private readonly petHtmlPath: string
   private readonly recoveryHtmlPath: string
+  private readonly trayPreloadPath: string
+  private readonly trayMenuHtmlPath: string
 
   constructor() {
     this.settingsStore = new DesktopSettingsStore()
@@ -64,17 +67,20 @@ class DesktopApplication {
     this.mainWinManager = new MainWindowManager()
     this.petWinManager = new PetWindowManager(this.settingsStore)
     this.updateManager = new DesktopUpdateManager(this.mainWinManager)
+    this.preloadPath = path.join(currentDir, 'preload.cjs')
+    this.trayPreloadPath = path.join(currentDir, 'tray-preload.cjs')
+    this.iconPath = path.join(currentDir, '../assets/icons/icon.png')
+    this.petHtmlPath = path.join(currentDir, '../assets/pet/pet.html')
+    this.recoveryHtmlPath = path.join(currentDir, '../assets/recovery/recovery.html')
+    this.trayMenuHtmlPath = path.join(currentDir, '../assets/tray/menu.html')
     this.trayMenuManager = new TrayMenuManager(
       this.mainWinManager,
       this.petWinManager,
       this.settingsStore,
       this.updateManager,
+      this.trayPreloadPath,
+      this.trayMenuHtmlPath,
     )
-
-    this.preloadPath = path.join(currentDir, 'preload.cjs')
-    this.iconPath = path.join(currentDir, '../assets/icons/icon.png')
-    this.petHtmlPath = path.join(currentDir, '../assets/pet/pet.html')
-    this.recoveryHtmlPath = path.join(currentDir, '../assets/recovery/recovery.html')
   }
 
   public init(): void {
@@ -189,11 +195,37 @@ class DesktopApplication {
     await this.bootAndLoad()
   }
 
+  private async waitForHttpReady(origin: string, timeoutMs = 10000): Promise<void> {
+    const start = Date.now()
+    while (Date.now() - start < timeoutMs) {
+      try {
+        const ready = await new Promise<boolean>((resolve) => {
+          const req = http.get(origin, (res) => {
+            res.resume()
+            resolve(res.statusCode === 200)
+          })
+          req.on('error', () => resolve(false))
+          req.setTimeout(1000, () => {
+            req.destroy()
+            resolve(false)
+          })
+        })
+        if (ready) return
+      } catch {
+        // retry
+      }
+      await new Promise((resolve) => setTimeout(resolve, 150))
+    }
+    throw new Error(`Web server at ${origin} did not become ready within ${timeoutMs}ms`)
+  }
+
   private async bootAndLoad(): Promise<boolean> {
     traceStartup('host-boot-start')
     try {
       const instance = await this.hostRunner.start()
       traceStartup(`host-boot-ready origin=${instance.origin}`)
+      await this.waitForHttpReady(instance.origin)
+      traceStartup(`host-http-ready origin=${instance.origin}`)
       await this.mainWinManager.loadUrl(instance.origin)
       return true
     } catch (err: any) {

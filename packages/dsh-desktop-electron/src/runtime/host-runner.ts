@@ -61,6 +61,21 @@ function rebuildClientGraphFromInstallation(ctx: any, installAnchor: string): vo
   }
 }
 
+function assertAgentPresetRuntimePackages(installAnchor: string): void {
+  const installedRequire = createRequire(installAnchor)
+  for (const packageName of [
+    '@deepseek-ai/dsh-persona',
+    '@deepseek-ai/dsh-workflow',
+    '@deepseek-ai/dsh-tool-ask-user',
+  ]) {
+    try {
+      installedRequire.resolve(`${packageName}/package.json`)
+    } catch {
+      throw new Error(`dsh-desktop: Agent 预设运行依赖缺失：${packageName}`)
+    }
+  }
+}
+
 export class DesktopHostRunner {
   private currentInstance: HostInstance | null = null
   private readonly profileManager: DesktopProfileManager
@@ -104,6 +119,8 @@ export class DesktopHostRunner {
         config: {
           openBrowser: false,
           printUrl: false,
+          surfaceContext: true,
+          trustedHosts: ['127.0.0.1', 'localhost'],
         },
       },
       {
@@ -177,6 +194,7 @@ export class DesktopHostRunner {
         throw new Error(`dsh-desktop: 内置 Agent 预设加载失败（目录：${resolveShippedAgentPresets()}）`)
       }
 
+      assertAgentPresetRuntimePackages(installAnchor)
       rebuildClientGraphFromInstallation(bootedContext, installAnchor)
 
 

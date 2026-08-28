@@ -15,7 +15,7 @@ export class MainWindowManager {
       minWidth: 800,
       minHeight: 600,
       show: false,
-      title: 'DeepSeek Harness 桌面版',
+      title: 'DeepSeek Harness Desktop',
       icon: iconPath,
       webPreferences: {
         preload: preloadPath,
@@ -23,6 +23,16 @@ export class MainWindowManager {
         nodeIntegration: false,
         sandbox: false,
       },
+    })
+
+    win.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+      console.error(`[main-window did-fail-load] code=${errorCode} desc=${errorDescription} url=${validatedURL} mainFrame=${isMainFrame}`)
+    })
+    win.webContents.on('preload-error', (_event, path, error) => {
+      console.error(`[main-window preload-error] path=${path} error=`, error)
+    })
+    win.webContents.on('did-finish-load', () => {
+      console.log('[main-window did-finish-load]')
     })
 
     // Handle close button: hide window instead of quitting unless app is quitting
@@ -49,12 +59,24 @@ export class MainWindowManager {
     return this.window && !this.window.isDestroyed() ? this.window : null
   }
 
-  public async loadUrl(url: string): Promise<void> {
+  public async loadUrl(url: string, maxAttempts = 15, delayMs = 300): Promise<void> {
     if (this.window && !this.window.isDestroyed()) {
-      await this.window.loadURL(url)
-      if (!this.window.isVisible()) {
-        this.window.show()
+      let lastError: any = null
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          await this.window.loadURL(url)
+          if (!this.window.isVisible()) {
+            this.window.show()
+          }
+          return
+        } catch (err: any) {
+          lastError = err
+          if (attempt < maxAttempts) {
+            await new Promise((resolve) => setTimeout(resolve, delayMs))
+          }
+        }
       }
+      throw lastError
     }
   }
 

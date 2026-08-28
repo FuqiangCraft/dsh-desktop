@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent;font-family:"Segoe UI","Microsoft YaHei",sans-serif;color:#172033;display:flex;flex-direction:column;justify-content:flex-end}
+.menu{margin:4px 6px 6px 6px;padding:6px;background:rgba(255,255,255,.98);border:1px solid #cbd9ee;border-radius:12px;box-shadow:0 8px 28px rgba(26,55,96,.22)}
+button{display:flex;align-items:center;width:100%;height:34px;padding:0 12px;border:0;border-radius:6px;background:transparent;color:inherit;font:13px inherit;text-align:left;cursor:pointer}
+button:hover{background:#edf5ff;color:#1267d6}button:disabled{color:#8a96a8;cursor:default;background:transparent}
+.separator{height:1px;margin:4px 6px;background:#2f80ed;opacity:.72}.title{font-weight:600}.sessions{max-height:82px;overflow:auto}.session{height:28px;padding-left:20px;color:#526176;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style></head><body><div class="menu">
+<button class="title" data-action="open">打开 DeepSeek Harness 桌面版</button>
+<button data-action="new-chat">新建会话</button>
+<div id="sessions" class="sessions"></div>
+<div class="separator"></div><button id="update" data-action="update">检查更新</button>
+<div class="separator"></div><button id="pet" data-action="pet">打开宠物</button>
+<div class="separator"></div><button data-action="quit">退出</button>
+</div><script>
+const bridge=window.__DSH_TRAY_MENU__
+document.addEventListener('click',e=>{const b=e.target.closest('button[data-action]');if(b&&!b.disabled)bridge.action(b.dataset.action,b.dataset.payload)})
+bridge.onState(state=>{const update=document.querySelector('#update');update.textContent=state.updateLabel;update.disabled=state.updateDisabled;document.querySelector('#pet').textContent=state.petLabel;const sessions=document.querySelector('#sessions');sessions.replaceChildren();if(!state.sessions.length){const b=document.createElement('button');b.className='session';b.disabled=true;b.textContent='暂无最近会话';sessions.append(b)}for(const item of state.sessions){const b=document.createElement('button');b.className='session';b.dataset.action='session';b.dataset.payload=item.id;b.textContent=item.title;sessions.append(b)}})
+</script></body></html>

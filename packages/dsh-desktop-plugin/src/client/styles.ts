@@ -271,7 +271,6 @@ html.dsh-has-custom-skin .dsh_desktop_attentionCard {
 }
 .dsh_desktop_notice.is-success { border-color: #22c55e; }
 .dsh_desktop_notice.is-error { border-color: #ef4444; }
-}
 .dsh_desktop_settingsTabs {
   display: flex;
   gap: 6px;
@@ -532,11 +531,7 @@ html.dsh-has-custom-skin .dsh_desktop_attentionCard {
   justify-content: space-between;
   gap: 20px;
   padding: 15px 16px;
-  overflow: visible;
-  border-bottom: 1px solid var(--dsw-alias-border-l1);
-}
-.dsh_desktop_petSizeRow:last-child {
-  border-bottom: 0;
+  overflow: hidden;
 }
 .dsh_desktop_petSizeRow .dsh_desktop_settingsSlider { width: 160px; }
 .dsh_desktop_settingsLabel {

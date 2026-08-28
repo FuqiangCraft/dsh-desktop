@@ -55,9 +55,8 @@ test('desktop updater uses electron-updater and GitHub Releases metadata', () =>
   assert.match(builderConfig, /provider:\s*github/, 'Builder must publish GitHub update metadata')
   assert.match(builderConfig, /owner:\s*FuqiangCraft/, 'Builder must target the project owner')
   assert.match(builderConfig, /repo:\s*dsh-desktop/, 'Builder must target the desktop repository')
-  assert.match(builderConfig, /asar:\s*true/, 'Builder must archive JavaScript dependencies to keep installation fast')
+  assert.match(builderConfig, /asar:\s*true/, 'Builder must archive JavaScript dependencies for fast installation')
   assert.match(builderConfig, /to:\s*agent-presets/, 'Builder must ship filesystem-readable agent presets')
-  assert.match(builderConfig, /lib\/client\.js/, 'Builder must unpack browser client entry bundles')
 })
 
 test('packaged host resolves web client packages from the installation anchor', () => {
@@ -67,13 +66,19 @@ test('packaged host resolves web client packages from the installation anchor', 
     /boot\([\s\S]*?pathToFileURL\(installAnchor\)\.href[\s\S]*?\)/,
     'Closed packaged runtimes must pass the installation anchor to boot()',
   )
+  for (const packageName of ['dsh-persona', 'dsh-workflow', 'dsh-tool-ask-user']) {
+    assert.match(hostRunnerTs, new RegExp(packageName), `Agent preset preflight must check ${packageName}`)
+  }
 })
 
 test('update controls are available from the tray and a dedicated settings section', () => {
   const trayTs = fs.readFileSync(path.join(rootDir, 'src/windows/tray-menu.ts'), 'utf8')
+  const trayHtml = fs.readFileSync(path.join(rootDir, 'assets/tray/menu.html'), 'utf8')
   const pluginTs = fs.readFileSync(path.resolve(rootDir, '../dsh-desktop-plugin/src/client/index.ts'), 'utf8')
   assert.match(trayTs, /['"]检查更新['"]/, 'Tray menu must expose a check-for-updates command')
   assert.match(trayTs, /checkForUpdates\(true\)/, 'Tray update checks must provide interactive feedback')
+  assert.match(trayTs, /new BrowserWindow/, 'Tray menu must use a styleable popup window')
+  assert.match(trayHtml, /\.separator[^}]*background:#2f80ed/, 'Tray popup separators must be blue')
   assert.match(pluginTs, /desktop-update/, 'App updates must have a dedicated settings section')
   assert.match(pluginTs, /AppUpdateSettingsSection/, 'Dedicated update settings UI must be registered')
 })

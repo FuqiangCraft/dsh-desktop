@@ -24,10 +24,10 @@ export const DEFAULT_DESKTOP_PATCH = `# Desktop profile cordis patch
 - id: directory-picker
   disabled: true
 - insert:
-    - id: directory-picker-browse
-      name: '@deepseek-ai/dsh-host-directory-picker-browse'
-    - id: ui-directory-picker-browse
-      name: '@deepseek-ai/dsh-client-ui-directory-picker-browse'
+    - id: directory-picker-native
+      name: '@deepseek-ai/dsh-host-directory-picker-native'
+    - id: ui-directory-picker-native
+      name: '@deepseek-ai/dsh-client-ui-directory-picker-native'
 - id: web-runtime
   config:
     openBrowser: false
