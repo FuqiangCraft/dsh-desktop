@@ -12,7 +12,7 @@ export interface DesktopSettings {
 }
 
 export const DEFAULT_SETTINGS: DesktopSettings = {
-  petEnabled: true,
+  petEnabled: false,
   petCharacter: 'robot',
   petSize: 100,
 }
@@ -33,7 +33,9 @@ function loadInitialSettings(): DesktopSettings {
     if (!raw) return { ...DEFAULT_SETTINGS }
     const parsed = JSON.parse(raw) as Partial<DesktopSettings>
     const settings: DesktopSettings = {
-      petEnabled: typeof parsed.petEnabled === 'boolean' ? parsed.petEnabled : DEFAULT_SETTINGS.petEnabled,
+      // Visibility is session-scoped: never auto-open a pet merely because it
+      // was visible when the previous desktop run ended.
+      petEnabled: false,
       petCharacter: typeof parsed.petCharacter === 'string' ? parsed.petCharacter : DEFAULT_SETTINGS.petCharacter,
       petSize: typeof parsed.petSize === 'number' ? Math.max(60, Math.min(140, parsed.petSize)) : DEFAULT_SETTINGS.petSize,
     }
@@ -85,7 +87,7 @@ export function updateDesktopSettings(patch: Partial<DesktopSettings>): DesktopS
   return currentSettings
 }
 
-/** Push a settings snapshot to the native shell through either supported IPC seam. */
+/** Push a settings snapshot to the native shell through the Electron bridge. */
 export function syncDesktopSettingsToHost(settings: DesktopSettings): void {
   if (typeof window !== 'undefined') {
     const bridge = (window as unknown as { __DSH_DESKTOP_BRIDGE__?: { syncSettings?: (settings: DesktopSettings) => void } }).__DSH_DESKTOP_BRIDGE__
@@ -95,11 +97,6 @@ export function syncDesktopSettingsToHost(settings: DesktopSettings): void {
       } catch {
         // bridge invocation failure is non-fatal
       }
-      return
-    }
-    const invoke = (window as unknown as { __TAURI_INTERNALS__?: { invoke?: (command: string, args?: Record<string, unknown>) => Promise<unknown> } }).__TAURI_INTERNALS__?.invoke
-    if (typeof invoke === 'function') {
-      void invoke('sync_desktop_settings', { settings })
     }
   }
 }

@@ -1,0 +1,62 @@
+appId: com.fuqiangcraft.dsh.desktop
+productName: DeepSeek Harness Desktop
+executableName: DeepSeek Harness Desktop
+copyright: Copyright © 2026 FuqiangCraft
+
+directories:
+  output: ../../dist-electron
+  buildResources: build
+
+publish:
+  provider: github
+  owner: FuqiangCraft
+  repo: dsh-desktop
+  releaseType: release
+
+files:
+  - dist/**/*
+  - assets/**/*
+  - package.json
+  - node_modules/**/*
+
+# Agent preset discovery uses node:fs and therefore needs ordinary filesystem
+# paths rather than files stored inside app.asar.
+extraResources:
+  - from: node_modules/@deepseek-ai/dsh/config/agent-presets
+    to: agent-presets
+    filter:
+      - '**/*'
+
+# Keep JavaScript dependencies in one archive so Windows installers extract
+# in 2 seconds instead of creating 40,000 tiny files. ESM packages and native
+# dependencies are unpacked to app.asar.unpacked for filesystem resolution.
+asar: true
+asarUnpack:
+  - '**/node_modules/@deepseek-ai/**/*'
+  - '**/node_modules/@mixian/**/*'
+  - '**/node_modules/@vscode/ripgrep-win32-x64/**/*'
+  - '**/node_modules/node-pty/**/*'
+  - '**/node_modules/koffi/**/*'
+  - '**/*.node'
+
+win:
+  icon: assets/icons/icon.ico
+  artifactName: DSH-Desktop-${version}-x64-Portable.${ext}
+  target:
+    - target: dir
+      arch:
+        - x64
+    - target: nsis
+      arch:
+        - x64
+    - target: zip
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+  shortcutName: DeepSeek Harness Desktop
+  artifactName: DSH-Desktop-${version}-x64-Setup.${ext}

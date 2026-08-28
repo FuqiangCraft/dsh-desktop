@@ -12,7 +12,7 @@ test('settings store has expected default values', () => {
   resetDesktopSettings()
   const settings = getDesktopSettings()
 
-  assert.equal(settings.petEnabled, true)
+  assert.equal(settings.petEnabled, false)
   assert.equal(settings.petCharacter, 'robot')
   assert.equal(settings.petSize, 100)
 })
@@ -89,27 +89,5 @@ test('syncs settings with native bridge when available', () => {
   assert.equal(bridgePayload.petEnabled, false)
   assert.equal(bridgePayload.petSize, 90)
 
-  delete globalThis.window
-})
-
-test('syncs character changes through Tauri when no custom bridge exists', async () => {
-  const calls = []
-  globalThis.window = {
-    __TAURI_INTERNALS__: {
-      invoke(command, args) {
-        calls.push({ command, args })
-        return Promise.resolve()
-      },
-    },
-    localStorage: { getItem() { return null }, setItem() {} },
-  }
-
-  updateDesktopSettings({ petCharacter: 'whale' })
-  await Promise.resolve()
-
-  assert.deepEqual(calls, [{
-    command: 'sync_desktop_settings',
-    args: { settings: getDesktopSettings() },
-  }])
   delete globalThis.window
 })

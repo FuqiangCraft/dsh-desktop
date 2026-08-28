@@ -25,6 +25,7 @@ import { MultiAgentCanvas, type CanvasInjected } from './MultiAgentCanvas.tsx'
 import { setupNotificationWatcher, setupTraySessionSync, type SessionsListFace } from './notifier.ts'
 import { setupPetStateEngine } from './pet/stateEngine.ts'
 import { DesktopSettingsSection } from './settings/DesktopSettingsSection.tsx'
+import { AppUpdateSettingsSection } from './settings/AppUpdateSettingsSection.tsx'
 import { setupPetNavIcon } from './settings/petNavIcon.ts'
 import { getDesktopSettings, syncDesktopSettingsToHost } from './settings/settingsStore.ts'
 import { adoptStyles } from './styles.ts'
@@ -44,6 +45,7 @@ const CANVAS_VIEW = 'canvas'
 
 /** The `settings.section` entry id for desktop & companion settings. */
 const SETTINGS_SECTION_ID = 'desktop-companion'
+const UPDATE_SETTINGS_SECTION_ID = 'desktop-update'
 
 /** Required services: the sessions store, slot registry, locale, and view registry. */
 export const inject = ['sessions', 'slots', 'locale', 'conversationViews']
@@ -129,5 +131,17 @@ export function apply(ctx: ClientContext): void {
       inject: () => ({ t }),
     },
     DesktopSettingsSection,
+  ))
+
+  ctx.slots.inject('settings.section', () => ctx.slots.register(
+    {
+      name: 'settings.section',
+      id: UPDATE_SETTINGS_SECTION_ID,
+      order: 40,
+      locale: NS,
+      label: () => t('settings.update.title'),
+      inject: () => ({ t }),
+    },
+    AppUpdateSettingsSection,
   ))
 }

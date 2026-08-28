@@ -31,10 +31,9 @@ test('pet state engine seeds idle state and updates on sessions changes', () => 
 
   const dispatched = []
   globalThis.window = {
-    __TAURI_INTERNALS__: {
-      invoke(cmd, args) {
-        dispatched.push({ cmd, args })
-        return Promise.resolve(null)
+    __DSH_DESKTOP_BRIDGE__: {
+      updatePetState(state, text) {
+        dispatched.push({ state, text })
       },
     },
   }
@@ -53,7 +52,7 @@ test('pet state engine seeds idle state and updates on sessions changes', () => 
   listener?.()
 
   assert.ok(
-    dispatched.some((d) => d.cmd === 'update_pet_state' && d.args.state === 'thinking'),
+    dispatched.some((d) => d.state === 'thinking'),
     'Must dispatch thinking state when session is running',
   )
 
@@ -67,7 +66,7 @@ test('pet state engine seeds idle state and updates on sessions changes', () => 
   listener?.()
 
   assert.ok(
-    dispatched.some((d) => d.cmd === 'update_pet_state' && d.args.state === 'alert'),
+    dispatched.some((d) => d.state === 'alert'),
     'Must dispatch alert state when pending interaction exists',
   )
 

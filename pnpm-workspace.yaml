@@ -7,6 +7,7 @@ packages:
 # them for internal types, which skipLibCheck skips. Resolve them to local
 # type-only stubs so the install succeeds.
 overrides:
+  'app-builder-lib>@electron/get': 3.1.0
   '@deepseek-ai/dsh-compact': workspace:*
   '@deepseek-ai/dsh-type-meta': workspace:*
   '@deepseek-ai/dsh-user-interaction': workspace:*
@@ -16,6 +17,20 @@ overrides:
 
 onlyBuiltDependencies:
   - esbuild
+  - electron
+  - koffi
+  - node-pty
+  - protobufjs
+  - electron-winstaller
+  - '@deepseek-ai/dsh-subprocess-local'
+  - '@google/genai'
 
 allowBuilds:
+  '@deepseek-ai/dsh-subprocess-local': true
+  '@google/genai': true
+  electron: true
+  electron-winstaller: true
   esbuild: true
+  koffi: true
+  node-pty: true
+  protobufjs: true
