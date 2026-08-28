@@ -17,28 +17,10 @@ const invoke = (command: string, args?: Record<string, unknown>) => (window as u
   __TAURI_INTERNALS__?: { invoke?: (command: string, args?: Record<string, unknown>) => Promise<unknown> }
 }).__TAURI_INTERNALS__?.invoke?.(command, args)
 
-interface DesktopUpdateState {
-  phase: 'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'up-to-date' | 'error'
-  currentVersion: string
-  availableVersion?: string
-  percent?: number
-  message?: string
-}
-
-const getUpdateBridge = () => (window as unknown as {
-  __DSH_DESKTOP_BRIDGE__?: {
-    getUpdateState?: () => Promise<DesktopUpdateState>
-    checkForUpdates?: () => Promise<DesktopUpdateState>
-    installUpdate?: () => Promise<boolean>
-    onUpdateState?: (callback: (state: DesktopUpdateState) => void) => () => void
-  }
-}).__DSH_DESKTOP_BRIDGE__
-
 export const DesktopSettingsSection: React.FC<DesktopSettingsSectionProps> = ({ t }) => {
   const [settings, setSettings] = useState<DesktopSettings>(getDesktopSettings)
   const [resourcePath, setResourcePath] = useState('~\\.dsh\\pets')
   const [customPets, setCustomPets] = useState<Array<{ name: string; preview: string }>>([])
-  const [updateState, setUpdateState] = useState<DesktopUpdateState | null>(null)
 
   useEffect(() => subscribeDesktopSettings(setSettings), [])
   useEffect(() => { void Promise.resolve(invoke('get_pet_resource_path')).then((path) => { if (typeof path === 'string') setResourcePath(path) }) }, [])
@@ -54,27 +36,6 @@ export const DesktopSettingsSection: React.FC<DesktopSettingsSectionProps> = ({ 
     })
     return () => { cancelled = true }
   }, [])
-  useEffect(() => {
-    const bridge = getUpdateBridge()
-    if (!bridge?.getUpdateState) return
-    void bridge.getUpdateState().then(setUpdateState)
-    return bridge.onUpdateState?.(setUpdateState)
-  }, [])
-
-  const updateButtonLabel = updateState?.phase === 'checking'
-    ? '正在检查…'
-    : updateState?.phase === 'downloading'
-      ? `下载中 ${updateState.percent || 0}%`
-      : updateState?.phase === 'downloaded'
-        ? '立即重启安装'
-        : '检查更新'
-
-  const handleUpdate = () => {
-    const bridge = getUpdateBridge()
-    if (updateState?.phase === 'downloaded') void bridge?.installUpdate?.()
-    else void bridge?.checkForUpdates?.().then(setUpdateState)
-  }
-
   return (
     <div className="dsh_desktop_settingsSection dsh_desktop_petSettings">
       <div className="dsh_desktop_petPageHeader">
@@ -141,27 +102,6 @@ export const DesktopSettingsSection: React.FC<DesktopSettingsSectionProps> = ({ 
         </div>
       </div>
 
-      {updateState && (
-        <div className="dsh_desktop_petAppearance">
-          <div className="dsh_desktop_settingsLabel">应用更新</div>
-          <div className="dsh_desktop_settingsCard dsh_desktop_petSizeRow">
-            <div>
-              <div className="dsh_desktop_settingsLabel">DeepSeek Harness 桌面版</div>
-              <div className="dsh_desktop_settingsDesc">
-                当前版本 {updateState.currentVersion} · {updateState.message || '可手动检查 GitHub Releases 新版本'}
-              </div>
-            </div>
-            <button
-              className="dsh_desktop_petFolderButton"
-              type="button"
-              disabled={updateState.phase === 'checking' || updateState.phase === 'downloading' || updateState.phase === 'available'}
-              onClick={handleUpdate}
-            >
-              {updateButtonLabel}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 {
   "name": "@dsh-community/dsh-desktop-electron",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "DeepSeek Harness Desktop — Self-contained Electron Host with embedded DSH runtime",
   "private": true,
   "type": "module",

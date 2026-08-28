@@ -69,6 +69,15 @@ test('packaged host resolves web client packages from the installation anchor', 
   )
 })
 
+test('update controls are available from the tray and a dedicated settings section', () => {
+  const trayTs = fs.readFileSync(path.join(rootDir, 'src/windows/tray-menu.ts'), 'utf8')
+  const pluginTs = fs.readFileSync(path.resolve(rootDir, '../dsh-desktop-plugin/src/client/index.ts'), 'utf8')
+  assert.match(trayTs, /['"]检查更新['"]/, 'Tray menu must expose a check-for-updates command')
+  assert.match(trayTs, /checkForUpdates\(true\)/, 'Tray update checks must provide interactive feedback')
+  assert.match(pluginTs, /desktop-update/, 'App updates must have a dedicated settings section')
+  assert.match(pluginTs, /AppUpdateSettingsSection/, 'Dedicated update settings UI must be registered')
+})
+
 test('assets exist and are complete', () => {
   assert.ok(fs.existsSync(path.join(rootDir, 'assets/pet/pet.html')), 'pet.html must exist')
   assert.ok(fs.existsSync(path.join(rootDir, 'assets/pet/dsh-companion.png')), 'dsh-companion.png must exist')

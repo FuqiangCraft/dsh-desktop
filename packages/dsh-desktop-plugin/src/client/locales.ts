@@ -30,6 +30,16 @@ export const zh = {
   'settings.tab.skin': '装扮换肤',
   'settings.tab.pet': '桌面伴侣',
   'settings.tab.about': '版本与环境',
+  'settings.update.title': '应用更新',
+  'settings.update.subtitle': '检查、下载并安装 DeepSeek Harness 桌面版更新',
+  'settings.update.desktop': '桌面版',
+  'settings.update.current': '当前版本',
+  'settings.update.hint': '可手动检查 GitHub Releases 新版本',
+  'settings.update.check': '检查更新',
+  'settings.update.checking': '正在检查…',
+  'settings.update.downloading': '下载中',
+  'settings.update.install': '立即重启安装',
+  'settings.update.unavailable': '当前环境不支持桌面应用更新。',
 
   // Settings: Skins & Wallpaper
   'settings.skin.title': '装扮与换肤',
@@ -119,6 +129,16 @@ export const en: Record<DesktopKey, string> = {
   'settings.tab.skin': 'Skins & Themes',
   'settings.tab.pet': 'Desktop Pet',
   'settings.tab.about': 'About & Versions',
+  'settings.update.title': 'App Updates',
+  'settings.update.subtitle': 'Check, download, and install DeepSeek Harness Desktop updates',
+  'settings.update.desktop': 'Desktop',
+  'settings.update.current': 'Current version',
+  'settings.update.hint': 'Check GitHub Releases for a newer version',
+  'settings.update.check': 'Check for updates',
+  'settings.update.checking': 'Checking…',
+  'settings.update.downloading': 'Downloading',
+  'settings.update.install': 'Restart and install',
+  'settings.update.unavailable': 'App updates are unavailable in this environment.',
 
   // Settings: Skins & Wallpaper
   'settings.skin.title': 'Skins & Themes',
