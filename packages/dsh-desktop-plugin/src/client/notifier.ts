@@ -26,10 +26,6 @@ export interface SessionsListFace {
   }
 }
 
-type TauriInternals = {
-  invoke?: (command: string, args?: Record<string, unknown>) => Promise<unknown>
-}
-
 /** Locale keys for each interaction kind's notification title. */
 const KIND_TITLE: Record<DesktopInteractionStatus, DesktopKey> = {
   approval: 'notify.titleApproval',
@@ -49,7 +45,6 @@ export interface DshDesktopBridge {
 declare global {
   interface Window {
     __DSH_DESKTOP_BRIDGE__?: DshDesktopBridge
-    __TAURI_INTERNALS__?: TauriInternals
     __DSH_DESKTOP_OPEN_SESSION__?: (id: string) => void
     __DSH_DESKTOP_NEW_CHAT__?: () => void
   }
@@ -58,8 +53,7 @@ declare global {
 /** Keep the native tray's recent-session submenu aligned with the client store. */
 export function setupTraySessionSync(sessions: SessionsListFace): () => void {
   const bridge = typeof window !== 'undefined' ? window.__DSH_DESKTOP_BRIDGE__ : undefined
-  const invoke = typeof window !== 'undefined' ? window.__TAURI_INTERNALS__?.invoke : undefined
-  if (!bridge?.syncRecentSessions && typeof invoke !== 'function') return () => {}
+  if (!bridge?.syncRecentSessions) return () => {}
 
   const update = (): void => {
     const snapshot = sessions.list.getSnapshot()
@@ -68,14 +62,12 @@ export function setupTraySessionSync(sessions: SessionsListFace): () => void {
       .filter((row): row is SessionSummary => row !== undefined)
       .slice(0, 5)
       .map((row) => ({ id: row.id, title: row.displayTitle }))
-    if (bridge?.syncRecentSessions) {
+    if (bridge.syncRecentSessions) {
       try {
         bridge.syncRecentSessions(recent)
       } catch {
         // ignore
       }
-    } else if (typeof invoke === 'function') {
-      void invoke('sync_recent_sessions', { sessions: recent })
     }
   }
 
@@ -102,7 +94,7 @@ export function setupNotificationWatcher(
   open: (id: SessionId) => void,
 ): () => void {
   const Notif = notifications()
-  const hasBridge = typeof window !== 'undefined' && (Boolean(window.__DSH_DESKTOP_BRIDGE__) || Boolean(window.__TAURI_INTERNALS__))
+  const hasBridge = typeof window !== 'undefined' && Boolean(window.__DSH_DESKTOP_BRIDGE__)
   if (Notif === undefined && !hasBridge) return () => {}
 
   // Prompt for notification permission on the operator's first click gesture

@@ -31,14 +31,9 @@ export function setupPetStateEngine(sessions: SessionsListFace, t: T): () => voi
     if (bridge?.updatePetState) {
       try {
         bridge.updatePetState(state, text ?? '')
-        return
       } catch {
         // ignore
       }
-    }
-    const invoke = window.__TAURI_INTERNALS__?.invoke
-    if (typeof invoke === 'function') {
-      void invoke('update_pet_state', { state, text: text ?? '' })
     }
   }
 

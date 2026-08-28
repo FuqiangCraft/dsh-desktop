@@ -91,25 +91,3 @@ test('syncs settings with native bridge when available', () => {
 
   delete globalThis.window
 })
-
-test('syncs character changes through Tauri when no custom bridge exists', async () => {
-  const calls = []
-  globalThis.window = {
-    __TAURI_INTERNALS__: {
-      invoke(command, args) {
-        calls.push({ command, args })
-        return Promise.resolve()
-      },
-    },
-    localStorage: { getItem() { return null }, setItem() {} },
-  }
-
-  updateDesktopSettings({ petCharacter: 'whale' })
-  await Promise.resolve()
-
-  assert.deepEqual(calls, [{
-    command: 'sync_desktop_settings',
-    args: { settings: getDesktopSettings() },
-  }])
-  delete globalThis.window
-})

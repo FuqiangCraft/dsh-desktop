@@ -87,7 +87,7 @@ export function updateDesktopSettings(patch: Partial<DesktopSettings>): DesktopS
   return currentSettings
 }
 
-/** Push a settings snapshot to the native shell through either supported IPC seam. */
+/** Push a settings snapshot to the native shell through the Electron bridge. */
 export function syncDesktopSettingsToHost(settings: DesktopSettings): void {
   if (typeof window !== 'undefined') {
     const bridge = (window as unknown as { __DSH_DESKTOP_BRIDGE__?: { syncSettings?: (settings: DesktopSettings) => void } }).__DSH_DESKTOP_BRIDGE__
@@ -97,11 +97,6 @@ export function syncDesktopSettingsToHost(settings: DesktopSettings): void {
       } catch {
         // bridge invocation failure is non-fatal
       }
-      return
-    }
-    const invoke = (window as unknown as { __TAURI_INTERNALS__?: { invoke?: (command: string, args?: Record<string, unknown>) => Promise<unknown> } }).__TAURI_INTERNALS__?.invoke
-    if (typeof invoke === 'function') {
-      void invoke('sync_desktop_settings', { settings })
     }
   }
 }
