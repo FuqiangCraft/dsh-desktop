@@ -43,14 +43,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --ignore-scripts
 
+      - name: Build packages
+        run: pnpm run build
+
       - name: Lint, typecheck and test Node packages
         run: |
           pnpm run lint
           pnpm run typecheck
           pnpm run test
-
-      - name: Build plugin
-        run: pnpm --filter @mixian/dsh-desktop-plugin build
 
       - name: Verify bundle integrity
         run: pnpm run verify:bundle
