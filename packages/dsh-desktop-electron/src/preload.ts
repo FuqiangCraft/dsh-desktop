@@ -18,6 +18,14 @@ export interface RecentSessionPayload {
   title: string
 }
 
+export interface DesktopUpdateState {
+  phase: 'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'up-to-date' | 'error'
+  currentVersion: string
+  availableVersion?: string
+  percent?: number
+  message?: string
+}
+
 const bridge = {
   notify(payload: DesktopNotificationPayload): void {
     ipcRenderer.send('dsh:notify', payload)
@@ -73,6 +81,24 @@ const bridge = {
 
   openProfileDir(): Promise<void> {
     return ipcRenderer.invoke('dsh:open-profile-dir')
+  },
+
+  getUpdateState(): Promise<DesktopUpdateState> {
+    return ipcRenderer.invoke('dsh:get-update-state')
+  },
+
+  checkForUpdates(): Promise<DesktopUpdateState> {
+    return ipcRenderer.invoke('dsh:check-for-updates')
+  },
+
+  installUpdate(): Promise<boolean> {
+    return ipcRenderer.invoke('dsh:install-update')
+  },
+
+  onUpdateState(callback: (state: DesktopUpdateState) => void): () => void {
+    const handler = (_event: unknown, state: DesktopUpdateState) => callback(state)
+    ipcRenderer.on('dsh:update-state', handler)
+    return () => ipcRenderer.removeListener('dsh:update-state', handler)
   },
 
   onPetCharacter(callback: (character: string) => void): () => void {

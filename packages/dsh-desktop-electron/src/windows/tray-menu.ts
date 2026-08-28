@@ -2,6 +2,7 @@ import { Tray, Menu, type MenuItemConstructorOptions, nativeImage, app } from 'e
 import type { MainWindowManager } from './main-window.ts'
 import type { PetWindowManager } from './pet-window.ts'
 import type { DesktopSettingsStore, RecentSession } from '../runtime/settings-store.ts'
+import type { DesktopUpdateManager } from '../runtime/update-manager.ts'
 
 export class TrayMenuManager {
   private tray: Tray | null = null
@@ -9,15 +10,18 @@ export class TrayMenuManager {
   private readonly mainWinManager: MainWindowManager
   private readonly petWinManager: PetWindowManager
   private readonly settingsStore: DesktopSettingsStore
+  private readonly updateManager: DesktopUpdateManager
 
   constructor(
     mainWinManager: MainWindowManager,
     petWinManager: PetWindowManager,
     settingsStore: DesktopSettingsStore,
+    updateManager: DesktopUpdateManager,
   ) {
     this.mainWinManager = mainWinManager
     this.petWinManager = petWinManager
     this.settingsStore = settingsStore
+    this.updateManager = updateManager
   }
 
   public createTray(iconPath: string): Tray {
@@ -29,7 +33,7 @@ export class TrayMenuManager {
     }
 
     this.tray = new Tray(image)
-    this.tray.setToolTip('DeepSeek Harness Desktop')
+    this.tray.setToolTip('DeepSeek Harness 桌面版')
 
     this.tray.on('click', () => {
       this.mainWinManager.restoreWindow()
@@ -53,6 +57,14 @@ export class TrayMenuManager {
 
     const settings = this.settingsStore.getSettings()
     const petLabel = settings.petEnabled ? '隐藏宠物' : '打开宠物'
+    const update = this.updateManager.getState()
+    const updateLabel = update.phase === 'downloading'
+      ? `正在下载更新 ${update.percent || 0}%`
+      : update.phase === 'downloaded'
+        ? `重启安装 ${update.availableVersion || '新版本'}`
+        : update.phase === 'checking'
+          ? '正在检查更新…'
+          : '检查更新'
 
     const recentSubmenu: MenuItemConstructorOptions[] = []
     if (this.recentSessions.length === 0) {
@@ -80,7 +92,7 @@ export class TrayMenuManager {
 
     const contextMenu = Menu.buildFromTemplate([
       {
-        label: '打开 DeepSeek Harness',
+        label: '打开 DeepSeek Harness 桌面版',
         click: () => {
           this.mainWinManager.restoreWindow()
         },
@@ -100,6 +112,15 @@ export class TrayMenuManager {
       {
         label: '最近会话',
         submenu: recentSubmenu,
+      },
+      { type: 'separator' },
+      {
+        label: updateLabel,
+        enabled: update.phase !== 'checking' && update.phase !== 'downloading',
+        click: () => {
+          if (update.phase === 'downloaded') void this.updateManager.installDownloadedUpdate()
+          else void this.updateManager.checkForUpdates(true)
+        },
       },
       { type: 'separator' },
       {

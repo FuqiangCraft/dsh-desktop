@@ -1,12 +1,8 @@
 import path from 'node:path'
-
-declare const __dirname: string
+import { fileURLToPath } from 'node:url'
 
 export function getCurrentDir(): string {
-  if (typeof __dirname !== 'undefined') {
-    return __dirname
-  }
-  return process.cwd()
+  return path.dirname(fileURLToPath(import.meta.url))
 }
 
 export function getPackageRoot(): string {

@@ -33,7 +33,9 @@ function loadInitialSettings(): DesktopSettings {
     if (!raw) return { ...DEFAULT_SETTINGS }
     const parsed = JSON.parse(raw) as Partial<DesktopSettings>
     const settings: DesktopSettings = {
-      petEnabled: typeof parsed.petEnabled === 'boolean' ? parsed.petEnabled : DEFAULT_SETTINGS.petEnabled,
+      // Visibility is session-scoped: never auto-open a pet merely because it
+      // was visible when the previous desktop run ended.
+      petEnabled: false,
       petCharacter: typeof parsed.petCharacter === 'string' ? parsed.petCharacter : DEFAULT_SETTINGS.petCharacter,
       petSize: typeof parsed.petSize === 'number' ? Math.max(60, Math.min(140, parsed.petSize)) : DEFAULT_SETTINGS.petSize,
     }

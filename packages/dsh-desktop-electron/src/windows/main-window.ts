@@ -15,7 +15,7 @@ export class MainWindowManager {
       minWidth: 800,
       minHeight: 600,
       show: false,
-      title: 'DeepSeek Harness Desktop',
+      title: 'DeepSeek Harness 桌面版',
       icon: iconPath,
       webPreferences: {
         preload: preloadPath,

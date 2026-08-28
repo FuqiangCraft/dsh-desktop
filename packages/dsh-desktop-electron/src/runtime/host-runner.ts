@@ -1,5 +1,8 @@
 import path from 'node:path'
 import crypto from 'node:crypto'
+import { createRequire } from 'node:module'
+import { pathToFileURL } from 'node:url'
+import { app } from 'electron'
 import type { Context } from '@deepseek-ai/cordis'
 import {
   boot,
@@ -21,6 +24,42 @@ export interface HostInstance {
 }
 
 const NAME = 'dsh-desktop'
+const require = createRequire(import.meta.url)
+
+function resolveShippedAgentPresets(): string {
+  if (app.isPackaged) return path.join(process.resourcesPath, 'agent-presets')
+  return path.join(path.dirname(require.resolve('@deepseek-ai/dsh/package.json')), 'config', 'agent-presets')
+}
+
+function rebuildClientGraphFromInstallation(ctx: any, installAnchor: string): void {
+  const registry = ctx.clientModules
+  if (!registry || typeof registry.graph !== 'function') {
+    throw new Error('dsh-desktop: 客户端插件清单服务未加载')
+  }
+
+  const packagedRequire = createRequire(installAnchor)
+  registry.resolvePkgJson = (specifier: string) => packagedRequire.resolve(`${specifier}/package.json`)
+  registry.pkgMeta.clear()
+  registry.table.clear()
+  for (const entry of ctx.loader.entries()) {
+    if (entry.fiber !== undefined && !entry.disabled && typeof entry.options?.name === 'string') {
+      registry.dirty.add(entry.options.name)
+    }
+  }
+
+  const failures: Error[] = []
+  registry.flush((error: Error) => failures.push(error))
+  if (failures.length > 0) {
+    throw new AggregateError(failures, 'dsh-desktop: 客户端插件清单重建失败')
+  }
+
+  const ids = new Set(registry.graph().entries.map((entry: any) => entry.id))
+  for (const required of ['@deepseek-ai/dsh-client-modules', '@mixian/dsh-desktop-plugin']) {
+    if (!ids.has(required)) {
+      throw new Error(`dsh-desktop: 客户端插件清单缺少 ${required}`)
+    }
+  }
+}
 
 export class DesktopHostRunner {
   private currentInstance: HostInstance | null = null
@@ -74,6 +113,18 @@ export class DesktopHostRunner {
           port,
         },
       },
+      {
+        id: 'agent-presets',
+        config: {
+          default: 'standard',
+          roots: [
+            {
+              path: resolveShippedAgentPresets(),
+              trust: 'system' as const,
+            },
+          ],
+        },
+      },
     ]
 
     const allPatches = [
@@ -114,7 +165,20 @@ export class DesktopHostRunner {
             },
           })
         },
+        pathToFileURL(installAnchor).href,
       )
+
+      const agentPresets = (bootedContext as any).agentPresets
+      if (!agentPresets || typeof agentPresets.list !== 'function') {
+        throw new Error('dsh-desktop: Agent 预设服务未加载')
+      }
+      const presetRoster = await agentPresets.list()
+      if (!Array.isArray(presetRoster) || !presetRoster.some((preset: any) => preset?.id === 'standard')) {
+        throw new Error(`dsh-desktop: 内置 Agent 预设加载失败（目录：${resolveShippedAgentPresets()}）`)
+      }
+
+      rebuildClientGraphFromInstallation(bootedContext, installAnchor)
+
 
       // Read listening port from webServer service or probed port
       const boundPort = (bootedContext as any).webServer?.port || port

@@ -13,14 +13,15 @@ if (!fs.existsSync(outDir)) {
 // 1. Build main process
 await esbuild.build({
   entryPoints: [path.join(__dirname, 'src/main.ts')],
-  outfile: path.join(outDir, 'main.cjs'),
+  outfile: path.join(outDir, 'main.js'),
   bundle: true,
   platform: 'node',
   target: 'node22',
-  format: 'cjs',
+  format: 'esm',
   sourcemap: true,
   external: [
     'electron',
+    'electron-updater',
     'koffi',
     'node-pty',
     '@deepseek-ai/*',
@@ -60,4 +61,4 @@ await esbuild.build({
   sourcemap: true,
 })
 
-console.log('Build completed: dist/main.cjs, dist/preload.cjs, dist/runtime/*.js')
+console.log('Build completed: dist/main.js, dist/preload.cjs, dist/runtime/*.js')

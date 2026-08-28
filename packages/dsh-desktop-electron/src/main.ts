@@ -1,4 +1,5 @@
 import path from 'node:path'
+import fs from 'node:fs'
 import { app, ipcMain, Notification, shell } from 'electron'
 import { DesktopSettingsStore, type DesktopSettings } from './runtime/settings-store.ts'
 import { DesktopProfileManager } from './runtime/profile-manager.ts'
@@ -7,13 +8,39 @@ import { MainWindowManager } from './windows/main-window.ts'
 import { PetWindowManager } from './windows/pet-window.ts'
 import { TrayMenuManager } from './windows/tray-menu.ts'
 import { getCurrentDir } from './runtime/paths.ts'
+import { DesktopUpdateManager } from './runtime/update-manager.ts'
 
 const currentDir = getCurrentDir()
 
+const startupLogPath = process.env.DSH_DESKTOP_STARTUP_LOG
+  || path.join(app.getPath('logs'), 'startup.log')
+function traceStartup(message: string): void {
+  try {
+    fs.mkdirSync(path.dirname(startupLogPath), { recursive: true })
+    fs.appendFileSync(startupLogPath, `${new Date().toISOString()} ${message}\n`, 'utf8')
+  } catch {
+    // Startup tracing is diagnostic-only and must never block the app.
+  }
+}
+
+function formatStartupError(error: unknown, depth = 0): string {
+  if (depth > 6) return '[maximum error depth reached]'
+  if (!(error instanceof Error)) return String(error)
+  const nested = error instanceof AggregateError
+    ? error.errors.map((item, index) => `aggregate[${index}]: ${formatStartupError(item, depth + 1)}`)
+    : []
+  const cause = error.cause ? [`cause: ${formatStartupError(error.cause, depth + 1)}`] : []
+  return [error.stack || error.message, ...nested, ...cause].join('\n')
+}
+
 // Enforce single instance lock
 const gotTheLock = app.requestSingleInstanceLock()
+traceStartup(`single-instance-lock=${gotTheLock}`)
 if (!gotTheLock) {
-  app.quit()
+  // app.quit() before `ready` can leave a headless secondary process alive.
+  // app.exit() terminates it synchronously while the primary instance handles
+  // the `second-instance` event and restores its existing window.
+  app.exit(0)
 }
 
 class DesktopApplication {
@@ -23,6 +50,7 @@ class DesktopApplication {
   private readonly mainWinManager: MainWindowManager
   private readonly petWinManager: PetWindowManager
   private readonly trayMenuManager: TrayMenuManager
+  private readonly updateManager: DesktopUpdateManager
 
   private readonly preloadPath: string
   private readonly iconPath: string
@@ -35,10 +63,12 @@ class DesktopApplication {
     this.hostRunner = new DesktopHostRunner(this.profileManager)
     this.mainWinManager = new MainWindowManager()
     this.petWinManager = new PetWindowManager(this.settingsStore)
+    this.updateManager = new DesktopUpdateManager(this.mainWinManager)
     this.trayMenuManager = new TrayMenuManager(
       this.mainWinManager,
       this.petWinManager,
       this.settingsStore,
+      this.updateManager,
     )
 
     this.preloadPath = path.join(currentDir, 'preload.cjs')
@@ -132,10 +162,20 @@ class DesktopApplication {
       this.profileManager.resetProfile()
       return this.bootAndLoad()
     })
+
+    ipcMain.handle('dsh:get-update-state', () => this.updateManager.getState())
+    ipcMain.handle('dsh:check-for-updates', () => this.updateManager.checkForUpdates(false))
+    ipcMain.handle('dsh:install-update', () => this.updateManager.installDownloadedUpdate())
   }
 
   private async onReady(): Promise<void> {
+    traceStartup('app-ready')
     this.registerIpcHandlers()
+    this.updateManager.init(() => this.trayMenuManager.updateMenu())
+
+    // A pet explicitly opened during the previous run must not automatically
+    // reappear on the next application launch.
+    const settings = this.settingsStore.saveSettings({ petEnabled: false })
 
     // 1. Create windows
     this.mainWinManager.createWindow(this.preloadPath, this.iconPath)
@@ -143,7 +183,6 @@ class DesktopApplication {
     this.trayMenuManager.createTray(this.iconPath)
 
     // Sync initial settings to pet window (keeps it hidden by default)
-    const settings = this.settingsStore.getSettings()
     this.petWinManager.syncSettings(settings)
 
     // 2. Boot Host and load URL
@@ -151,15 +190,18 @@ class DesktopApplication {
   }
 
   private async bootAndLoad(): Promise<boolean> {
+    traceStartup('host-boot-start')
     try {
       const instance = await this.hostRunner.start()
+      traceStartup(`host-boot-ready origin=${instance.origin}`)
       await this.mainWinManager.loadUrl(instance.origin)
       return true
     } catch (err: any) {
+      traceStartup(`host-boot-failed error=${formatStartupError(err)}`)
       console.error('[dsh-desktop-electron] Boot failed:', err)
       await this.mainWinManager.loadRecovery(
         this.recoveryHtmlPath,
-        err?.message || String(err),
+        formatStartupError(err),
       )
       return false
     }

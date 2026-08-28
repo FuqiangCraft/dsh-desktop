@@ -40,6 +40,33 @@ test('preload.ts exposes __DSH_DESKTOP_BRIDGE__ with all required methods', () =
   assert.match(preloadTs, /syncRecentSessions\(/, 'Bridge must include syncRecentSessions')
   assert.match(preloadTs, /retryBoot\(/, 'Bridge must include retryBoot')
   assert.match(preloadTs, /resetProfile\(/, 'Bridge must include resetProfile')
+  assert.match(preloadTs, /getUpdateState\(/, 'Bridge must include getUpdateState')
+  assert.match(preloadTs, /checkForUpdates\(/, 'Bridge must include checkForUpdates')
+  assert.match(preloadTs, /installUpdate\(/, 'Bridge must include installUpdate')
+  assert.match(preloadTs, /onUpdateState\(/, 'Bridge must include onUpdateState')
+})
+
+test('desktop updater uses electron-updater and GitHub Releases metadata', () => {
+  const updaterTs = fs.readFileSync(path.join(rootDir, 'src/runtime/update-manager.ts'), 'utf8')
+  const builderConfig = fs.readFileSync(path.join(rootDir, 'electron-builder.yml'), 'utf8')
+
+  assert.match(updaterTs, /checkForUpdates\(\)/, 'Updater must support checking for releases')
+  assert.match(updaterTs, /quitAndInstall\(/, 'Updater must support restart-and-install')
+  assert.match(builderConfig, /provider:\s*github/, 'Builder must publish GitHub update metadata')
+  assert.match(builderConfig, /owner:\s*FuqiangCraft/, 'Builder must target the project owner')
+  assert.match(builderConfig, /repo:\s*dsh-desktop/, 'Builder must target the desktop repository')
+  assert.match(builderConfig, /asar:\s*true/, 'Builder must archive JavaScript dependencies to keep installation fast')
+  assert.match(builderConfig, /to:\s*agent-presets/, 'Builder must ship filesystem-readable agent presets')
+  assert.match(builderConfig, /lib\/client\.js/, 'Builder must unpack browser client entry bundles')
+})
+
+test('packaged host resolves web client packages from the installation anchor', () => {
+  const hostRunnerTs = fs.readFileSync(path.join(rootDir, 'src/runtime/host-runner.ts'), 'utf8')
+  assert.match(
+    hostRunnerTs,
+    /boot\([\s\S]*?pathToFileURL\(installAnchor\)\.href[\s\S]*?\)/,
+    'Closed packaged runtimes must pass the installation anchor to boot()',
+  )
 })
 
 test('assets exist and are complete', () => {

@@ -1,10 +1,16 @@
 appId: com.fuqiangcraft.dsh.desktop
-productName: DeepSeek Harness Desktop
+productName: DeepSeek Harness 桌面版
 copyright: Copyright © 2026 FuqiangCraft
 
 directories:
   output: ../../dist-electron
   buildResources: build
+
+publish:
+  provider: github
+  owner: FuqiangCraft
+  repo: dsh-desktop
+  releaseType: release
 
 files:
   - dist/**/*
@@ -12,14 +18,28 @@ files:
   - package.json
   - node_modules/**/*
 
+# Agent preset discovery uses node:fs and therefore needs ordinary filesystem
+# paths rather than files stored inside app.asar.
+extraResources:
+  - from: node_modules/@deepseek-ai/dsh/config/agent-presets
+    to: agent-presets
+    filter:
+      - '**/*'
+
+# Keep JavaScript dependencies in one archive so Windows installers do not
+# have to create and antivirus-scan tens of thousands of tiny files. Native
+# dependencies are automatically placed in app.asar.unpacked by electron-builder.
 asar: true
 asarUnpack:
-  - '**/node_modules/node-pty/**/*'
-  - '**/node_modules/koffi/**/*'
-  - '**/node_modules/@deepseek-ai/dsh-subprocess-local/**/*'
+  # The web host resolves these browser bundles to filesystem paths before
+  # emitting modulepreload tags. Keep only the 44 client entry files outside
+  # ASAR; their package code and all other dependencies stay archived.
+  - 'node_modules/@deepseek-ai/**/lib/client.js'
+  - 'node_modules/@mixian/**/lib/client.js'
 
 win:
   icon: assets/icons/icon.ico
+  artifactName: DSH-Desktop-${version}-x64-Portable.${ext}
   target:
     - target: nsis
       arch:
@@ -33,8 +53,5 @@ nsis:
   perMachine: false
   allowToChangeInstallationDirectory: true
   deleteAppDataOnUninstall: false
-  shortcutName: DeepSeek Harness Desktop
+  shortcutName: DeepSeek Harness 桌面版
   artifactName: DSH-Desktop-${version}-x64-Setup.${ext}
-
-zip:
-  artifactName: DSH-Desktop-${version}-x64-Portable.zip
