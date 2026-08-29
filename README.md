@@ -5,7 +5,7 @@
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A Cordis plugin and a Tauri desktop shell for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`). The plugin adds desktop notifications for pending interactions, an opt-in `screen_capture` model tool, a multi-agent tiling canvas, a desk-pet companion window, and a desktop settings section. The shell runs `dsh --profile web` natively with tray controls.
+An Electron desktop shell and a Cordis plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`). The plugin adds desktop notifications for pending interactions, an opt-in `screen_capture` model tool, a multi-agent tiling canvas, a desk-pet companion window, and a desktop settings section. The shell boots the dsh host in-process and embeds its web UI in a native window with tray controls.
 
 [English](README.md) | [中文](README.zh.md)
 
@@ -17,8 +17,8 @@ A Cordis plugin and a Tauri desktop shell for [DeepSeek Harness](https://github.
 | `screen_capture` model tool | host | Captures the primary display and commits the screenshot into the conversation as an image attachment. **Disabled by default** — see [Consent](#consent). |
 | Multi-agent tiling canvas | client | A `conversation.view` tab rendering a live, read-only grid of sessions and sub-agents from the sessions store. |
 | Desk pet | client | A floating companion window (cat / robot / whale) driven by a state engine that derives pet state (idle / thinking / working / alert / success) from live sessions. Ships a custom navigation icon in the dsh nav bar. |
-| Desktop settings | client | A settings section for pet preferences, window skins (frosted / anime / cyberpunk / space presets, custom uploads, blur & dim tuning), and about / update info. |
-| Native shell | app | Tauri 2.0 app that starts `dsh --profile web`, embeds the local Web UI, pins in-app directory browsing, and provides tray controls with a recent-sessions menu and update checks. |
+| Desktop settings | client | A settings section for pet preferences: enable/disable, character (built-in robot / whale / cat or a custom PNG), and size. |
+| Native shell | app | Electron 35 app that boots the dsh host in-process, embeds the local Web UI in a frameless window, pins in-app directory browsing, and provides tray controls with a recent-sessions menu and update checks. |
 
 ## How it plugs in
 
@@ -72,10 +72,9 @@ Requires Node.js ≥ 22 and pnpm 11 (`corepack enable`).
 
 ## Known Limitations
 
-- The floating Attention HUD targets the `shell.overlay` slot, which exists in dsh `master` but is **not yet in the published client runtime** (`@deepseek-ai/dsh-client-*@0.0.1-rc.1`). The component ships ready (`AttentionCard.tsx`) but mounts only once that slot is published.
 - Screen capture is host-only and captures the primary display; multi-monitor and region capture are not supported.
 - The multi-agent canvas is a read-only monitor; it does not create or attach sessions.
-- Notifications use the browser desktop-notification API; native OS notifications and the `Alt+Space` global quick panel are planned, not shipped.
+- Notifications fire as native OS notifications in the desktop shell and fall back to the browser desktop-notification API in the web runtime. The `Alt+Space` global quick panel is planned, not shipped.
 - Time travel, session rewind, and live fork are not implemented.
 
 ## Development

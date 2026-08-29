@@ -41,7 +41,7 @@
 ## 三、DSH 宠物/桌面伴侣系统（Desktop Pet & Companion）设计规范
 
 ### 1. 系统架构定位
-- **宿主层（Tauri 2.0 / Rust）**：负责独立无边框透明悬浮窗（`pet-window`）、置顶（Always-on-top）、鼠标穿透与拖拽吸附、全局快捷键与原生系统通知/音效。
+- **宿主层（Electron 主进程）**：负责独立无边框透明悬浮窗（`pet-window`）、置顶（Always-on-top）、鼠标穿透与拖拽吸附、全局快捷键与原生系统通知/音效。
 - **扩展层（Cordis Plugin）**：
   - **Host 端**：提供配置 Schema、权限守卫与系统能力。
   - **Client 端**：监听 DSH 事件总线（`turn/start`, `step/start`, `tools/execute`, `question/requested`, `turn/end`），驱动伴侣动画与状态机，并注册原生设置插槽。
