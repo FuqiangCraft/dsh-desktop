@@ -182,4 +182,4 @@
 6. **发布的 npm 运行时比仓库 master 旧**：`shell.overlay` 插槽只在 master，`@deepseek-ai/dsh-client-*@0.0.1-rc.1` 没有它。浮动 HUD 因此未实现（备件组件已移除，插槽发布后再评估）。
 7. **npm rc 生态有断依赖**：6 个未发布的内部包（`dsh-compact`、`dsh-type-meta`、`dsh-user-interaction`、`dsh-paths`、`dsh-tasks`、`dsh-client-ui-slash`）。本仓库用 `stubs/` type-stub + pnpm workspace override 绕过（详见 `pnpm-workspace.yaml`）。
 8. **客户端 bundle 是单文件 + ModuleLoader 握手**，不是普通 ESM：`window.__ModuleLoader__.load({ id, factory })`，esbuild `banner`/`footer` 实现（见 `build.mjs`）。
-9. **桌面外壳已从 Tauri 迁移到 Electron**：初版设想的 Tauri 2.0 + Rust 方案（`packages/dsh-desktop-app`）已被 `packages/dsh-desktop-electron` 取代——Electron 主进程内嵌 cordis host 直接运行 dsh 运行时，插件与外壳统一走 `__DSH_DESKTOP_BRIDGE__` 单一 IPC 通道。上文涉及 Tauri 的描述均已按此更新。
+9. **桌面外壳已迁移到 Electron**：初版的 Rust 原生壳方案（`packages/dsh-desktop-app`）已被 `packages/dsh-desktop-electron` 取代——Electron 主进程内嵌 cordis host 直接运行 dsh 运行时，插件与外壳统一走 `__DSH_DESKTOP_BRIDGE__` 单一 IPC 通道。上文涉及原生壳的描述均已按此更新。
