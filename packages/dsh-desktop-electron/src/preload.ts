@@ -137,6 +137,9 @@ contextBridge.exposeInMainWorld('__DSH_DESKTOP_BRIDGE__', bridge)
 // The desktop shell uses a frameless window so its menu can share one row with
 // the title and native window controls, matching the reference desktop UI.
 window.addEventListener('DOMContentLoaded', () => {
+  // The pet companion window shares this preload for bridge access but is a
+  // frameless 160px sprite — never inject the shell titlebar into it.
+  if (location.pathname.replace(/\\/g, '/').endsWith('/pet.html')) return
   if (document.getElementById('dsh-shell-titlebar')) return
   const chinese = navigator.language.toLowerCase().startsWith('zh')
   const labels = chinese ? ['文件', '编辑', '视图', '窗口', '帮助'] : ['File', 'Edit', 'View', 'Window', 'Help']

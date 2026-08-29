@@ -10,8 +10,8 @@
     "build": "node scripts/verify-runtime.mjs && node build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --test test/*.test.mjs",
-    "package:dir": "electron-builder --dir --config electron-builder.yml --publish never",
-    "package:win": "electron-builder --win nsis portable --config electron-builder.yml --publish never"
+    "package:dir": "pnpm build && electron-builder --dir --config electron-builder.yml --publish never",
+    "package:win": "pnpm build && electron-builder --win nsis portable --config electron-builder.yml --publish never"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",
