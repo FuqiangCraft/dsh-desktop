@@ -1,6 +1,5 @@
 import path from 'node:path'
 import fs from 'node:fs'
-import http from 'node:http'
 import { app, ipcMain, Notification, shell } from 'electron'
 import { DesktopSettingsStore, type DesktopSettings } from './runtime/settings-store.ts'
 import { DesktopProfileManager } from './runtime/profile-manager.ts'
@@ -227,30 +226,6 @@ class DesktopApplication {
     traceStartup('startup-complete')
   }
 
-  private async waitForHttpReady(origin: string, timeoutMs = 10000): Promise<void> {
-    const start = Date.now()
-    while (Date.now() - start < timeoutMs) {
-      try {
-        const ready = await new Promise<boolean>((resolve) => {
-          const req = http.get(origin, (res) => {
-            res.resume()
-            resolve(res.statusCode === 200)
-          })
-          req.on('error', () => resolve(false))
-          req.setTimeout(1000, () => {
-            req.destroy()
-            resolve(false)
-          })
-        })
-        if (ready) return
-      } catch {
-        // retry
-      }
-      await new Promise((resolve) => setTimeout(resolve, 150))
-    }
-    throw new Error(`Web server at ${origin} did not become ready within ${timeoutMs}ms`)
-  }
-
   private bootAndLoad(): Promise<boolean> {
     if (this.bootPromise) {
       traceStartup('host-boot-reused-in-flight')
@@ -268,8 +243,9 @@ class DesktopApplication {
     try {
       const instance = await this.hostRunner.start()
       traceStartup(`host-boot-ready origin=${instance.origin}`)
-      await this.waitForHttpReady(instance.origin)
-      traceStartup(`host-http-ready origin=${instance.origin}`)
+      // The cordis boot() promise resolves only after the embedded web server
+      // is listening, so no readiness polling is needed before loading the UI;
+      // loadUrl's own retry loop absorbs any transient first-load hiccup.
       await this.mainWinManager.loadUrl(instance.origin)
       traceStartup(`host-boot-duration-ms=${Date.now() - startedAt}`)
       return true
