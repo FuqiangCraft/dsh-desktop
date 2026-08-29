@@ -10,9 +10,6 @@ packages/*/dist/
 dist-electron*/
 .tmp-*/
 
-# Signing keys (update signing private key must never be committed)
-.tauri-keys/
-
 # Editors and operating systems
 .DS_Store
 Thumbs.db
