@@ -9,7 +9,6 @@ type MenuLocale = {
   edit: string
   view: string
   reload: string
-  toggleDevTools: string
   resetZoom: string
   zoomIn: string
   zoomOut: string
@@ -25,13 +24,13 @@ type MenuLocale = {
 const locales: Record<'zh' | 'en', MenuLocale> = {
   zh: {
     file: '文件', newChat: '新建会话', close: '关闭窗口', edit: '编辑', view: '视图',
-    reload: '重新加载', toggleDevTools: '开发者工具', resetZoom: '重置缩放', zoomIn: '放大', zoomOut: '缩小',
+    reload: '重新加载', resetZoom: '重置缩放', zoomIn: '放大', zoomOut: '缩小',
     window: '窗口', minimize: '最小化', showWindow: '显示主窗口', help: '帮助', projectHome: '项目主页',
     checkUpdates: '检查更新', about: '关于 DSH Desktop',
   },
   en: {
     file: 'File', newChat: 'New Chat', close: 'Close Window', edit: 'Edit', view: 'View',
-    reload: 'Reload', toggleDevTools: 'Toggle Developer Tools', resetZoom: 'Reset Zoom', zoomIn: 'Zoom In', zoomOut: 'Zoom Out',
+    reload: 'Reload', resetZoom: 'Reset Zoom', zoomIn: 'Zoom In', zoomOut: 'Zoom Out',
     window: 'Window', minimize: 'Minimize', showWindow: 'Show Main Window', help: 'Help', projectHome: 'Project Homepage',
     checkUpdates: 'Check for Updates', about: 'About DSH Desktop',
   },
@@ -50,7 +49,7 @@ export function createApplicationMenu(
   const template: MenuItemConstructorOptions[] = [
     { label: copy.file, submenu: [{ label: copy.newChat, accelerator: 'CmdOrCtrl+N', click: options.onNewChat }, { type: 'separator' }, { role: 'close', label: copy.close }] },
     { label: copy.edit, submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
-    { label: copy.view, submenu: [{ role: 'reload', label: copy.reload }, { role: 'toggleDevTools', label: copy.toggleDevTools }, { type: 'separator' }, { role: 'resetZoom', label: copy.resetZoom }, { role: 'zoomIn', label: copy.zoomIn }, { role: 'zoomOut', label: copy.zoomOut }] },
+    { label: copy.view, submenu: [{ role: 'reload', label: copy.reload }, { type: 'separator' }, { role: 'resetZoom', label: copy.resetZoom }, { role: 'zoomIn', label: copy.zoomIn }, { role: 'zoomOut', label: copy.zoomOut }] },
     { label: copy.window, submenu: [{ role: 'minimize', label: copy.minimize }, { label: copy.showWindow, click: () => { if (win.isMinimized()) win.restore(); win.show(); win.focus() } }] },
     { label: copy.help, submenu: [
       { label: copy.projectHome, click: () => { void shell.openExternal(PROJECT_URL) } },

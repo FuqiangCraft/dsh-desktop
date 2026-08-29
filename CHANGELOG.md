@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Plugin ↔ shell IPC consolidated onto the single `__DSH_DESKTOP_BRIDGE__` channel: pet state engine, tray recent-sessions sync, desktop settings sync, and pet resource queries no longer fall back to the legacy second IPC channel. This also restores pet-state and recent-session sync on Electron, which previously had no sender.
 - Docs aligned with the Electron shell (README, README.zh, AGENT.md, ARCHITECTURE_ANALYSIS).
 
+## [0.1.2] - 2026-08-30
+
+### Fixed
+- Restore the Electron DSH runtime dependency surface required by the profile loader.
+- Remove the pet-window debug DOM dump and suppress the developer-tools application-menu entry.
+
 ## [0.2.11]
 
 - Use DSH Web's in-app directory browser for workspace selection.

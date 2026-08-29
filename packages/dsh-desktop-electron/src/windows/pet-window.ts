@@ -42,6 +42,9 @@ export class PetWindowManager {
       y,
       frame: false,
       transparent: true,
+      // WS_THICKFRAME (default on frameless Windows windows) draws a faint
+      // light strip along the top edge of a transparent window.
+      thickFrame: false,
       backgroundColor: '#00000000',
       title: '',
       alwaysOnTop: true,

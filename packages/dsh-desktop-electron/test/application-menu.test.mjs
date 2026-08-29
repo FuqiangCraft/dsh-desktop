@@ -21,6 +21,6 @@ test('application menu has the ChatGPT-style top-level order and key actions', (
   assert.match(source, /label: copy\.window/)
   assert.match(source, /label: copy\.help/)
   assert.match(source, /role: 'undo'/)
-  assert.match(source, /role: 'toggleDevTools'/)
+  assert.doesNotMatch(source, /role: 'toggleDevTools'/)
   assert.match(source, /shell\.openExternal\(PROJECT_URL\)/)
 })
