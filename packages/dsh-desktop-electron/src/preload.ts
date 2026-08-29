@@ -47,8 +47,8 @@ const bridge = {
     ipcRenderer.send('dsh:sync-recent-sessions', sessions)
   },
 
-  startDraggingPet(): void {
-    ipcRenderer.send('dsh:start-dragging-pet')
+  getPetResourcePath(): Promise<string> {
+    return ipcRenderer.invoke('dsh:get-pet-resource-path')
   },
 
   openPetResourceFolder(): Promise<void> {
@@ -61,14 +61,6 @@ const bridge = {
 
   readPetResource(name: string): Promise<string | null> {
     return ipcRenderer.invoke('dsh:read-pet-resource', name)
-  },
-
-  openSession(id: string): void {
-    ipcRenderer.send('dsh:open-session', id)
-  },
-
-  newChat(): void {
-    ipcRenderer.send('dsh:new-chat')
   },
 
   retryBoot(): Promise<boolean> {

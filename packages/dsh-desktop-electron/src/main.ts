@@ -162,6 +162,10 @@ class DesktopApplication {
       this.trayMenuManager.setRecentSessions(sessions)
     })
 
+    ipcMain.handle('dsh:get-pet-resource-path', () => {
+      return this.settingsStore.getPetsDir()
+    })
+
     ipcMain.handle('dsh:open-pet-resource-folder', async () => {
       const dir = this.settingsStore.getPetsDir()
       await shell.openPath(dir)

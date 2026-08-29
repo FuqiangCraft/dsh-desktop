@@ -24,8 +24,8 @@ test('settings UI offers desktop companion characters without skin controls', as
   assert.match(source, /id: 'cat'/)
   assert.doesNotMatch(source, /woodfish/)
   assert.match(source, /dsh_desktop_petThumbnail/)
-  assert.match(source, /get_pet_resource_path/)
-  assert.match(source, /open_pet_resource_folder/)
+  assert.match(source, /getPetResourcePath/)
+  assert.match(source, /openPetResourceFolder/)
 
   assert.doesNotMatch(source, /PRESET_SKINS|skinTheme|get_skin_resource_path|save_skin_resource/)
 })
@@ -92,13 +92,12 @@ test('syncs settings with native bridge when available', () => {
   delete globalThis.window
 })
 
-test('syncs character changes through Tauri when no custom bridge exists', async () => {
+test('syncs character changes through the desktop bridge', async () => {
   const calls = []
   globalThis.window = {
-    __TAURI_INTERNALS__: {
-      invoke(command, args) {
-        calls.push({ command, args })
-        return Promise.resolve()
+    __DSH_DESKTOP_BRIDGE__: {
+      syncSettings(settings) {
+        calls.push(settings)
       },
     },
     localStorage: { getItem() { return null }, setItem() {} },
@@ -107,9 +106,6 @@ test('syncs character changes through Tauri when no custom bridge exists', async
   updateDesktopSettings({ petCharacter: 'whale' })
   await Promise.resolve()
 
-  assert.deepEqual(calls, [{
-    command: 'sync_desktop_settings',
-    args: { settings: getDesktopSettings() },
-  }])
+  assert.deepEqual(calls, [getDesktopSettings()])
   delete globalThis.window
 })
