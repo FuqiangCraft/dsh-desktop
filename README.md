@@ -59,11 +59,11 @@ The captured image is always surfaced back into the conversation for transparenc
 
 ```sh
 pnpm install
-pnpm dev:app        # tauri dev
-pnpm tauri build    # production bundles
+pnpm dev            # Electron dev
+pnpm electron:package # Windows production bundle
 ```
 
-Requires Node.js ≥ 22, pnpm 11 (`corepack enable`), and a Rust toolchain.
+Requires Node.js ≥ 22 and pnpm 11 (`corepack enable`).
 
 ## Model Experience
 
@@ -82,7 +82,7 @@ Requires Node.js ≥ 22, pnpm 11 (`corepack enable`), and a Rust toolchain.
 
 ```sh
 pnpm install
-pnpm check          # lint + typecheck + tests + cargo check/test + plugin build + bundle verification
+pnpm check          # lint + typecheck + tests + Electron build + plugin build + bundle verification
 pnpm dev:plugin     # plugin dev loop
 ```
 
@@ -90,7 +90,7 @@ pnpm dev:plugin     # plugin dev loop
 
 ```
 packages/dsh-desktop-plugin/   # dual-face Cordis plugin (dsh.bundle + dsh.client)
-packages/dsh-desktop-app/      # Tauri 2.0 native shell
+packages/dsh-desktop-electron/ # Electron desktop application
 stubs/                         # local type-stubs for unpublished @deepseek-ai/* transitive deps
 docs/                          # ARCHITECTURE_ANALYSIS + PUBLISHING_GUIDE (verified 2026-08)
 ```

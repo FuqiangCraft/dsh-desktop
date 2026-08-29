@@ -59,11 +59,11 @@ dsh web --patch ./packages/dsh-desktop-plugin/cordis.patch.yml
 
 ```sh
 pnpm install
-pnpm dev:app        # tauri dev
-pnpm tauri build    # 生产构建
+pnpm dev            # Electron 开发
+pnpm electron:package # Windows 生产构建
 ```
 
-需要 Node.js ≥ 22、pnpm 11（`corepack enable`）和 Rust 工具链。
+需要 Node.js ≥ 22 和 pnpm 11（`corepack enable`）。
 
 ## 模型体验
 
@@ -82,7 +82,7 @@ pnpm tauri build    # 生产构建
 
 ```sh
 pnpm install
-pnpm check          # lint + 类型检查 + 测试 + cargo 检查/测试 + 插件构建 + bundle 校验
+pnpm check          # lint + 类型检查 + 测试 + Electron 构建 + 插件构建 + bundle 校验
 pnpm dev:plugin     # 插件开发循环
 ```
 
@@ -90,7 +90,7 @@ pnpm dev:plugin     # 插件开发循环
 
 ```
 packages/dsh-desktop-plugin/   # 双面 Cordis 插件（dsh.bundle + dsh.client）
-packages/dsh-desktop-app/      # Tauri 2.0 原生外壳
+packages/dsh-desktop-electron/ # Electron 桌面应用
 stubs/                         # 尚未发布的 @deepseek-ai/* 传递依赖的本地类型桩
 docs/                          # ARCHITECTURE_ANALYSIS + PUBLISHING_GUIDE（2026-08 验证）
 ```

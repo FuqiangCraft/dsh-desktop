@@ -27,3 +27,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automated bundle integrity verification script (`scripts/verify-bundle.mjs`).
 - GitHub Actions CI workflow supporting Node.js 22/24 across Ubuntu, Windows, and macOS.
 - Community guidelines: `CONTRIBUTING.md`, `SECURITY.md`, issue and pull request templates.
+## 0.2.8
+
+- Use a frameless custom title bar so the application menu shares one row with the window title and controls.
+- Follow the system language for the title-bar menu and prevent confusion with older packaged builds.
+## 0.2.9
+
+- Fix the top sidebar toggle when the web UI button has no accessible label.
+- Hide the duplicate web UI sidebar toggle and add an exit timeout so installer completion cannot wait indefinitely.
+## 0.2.10
+
+- Keep the web sidebar toggle callable after hiding its duplicate visual control.
+- Disable automatic app launch after NSIS completion to prevent the installer Finish step from waiting on the desktop host.
+## 0.2.11
+
+- Use DSH Web's in-app directory browser for workspace selection.
+- Automatically migrate existing desktop profiles from the native directory picker.
