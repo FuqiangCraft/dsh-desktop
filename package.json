@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "pnpm -r run build",
+    "dev:electron": "pnpm --filter @dsh-community/dsh-desktop-electron dev",
     "dev:plugin": "pnpm --filter @mixian/dsh-desktop-plugin dev",
     "dev": "pnpm --dir packages/dsh-desktop-electron exec electron .",
     "electron:typecheck": "pnpm --dir packages/dsh-desktop-electron typecheck",

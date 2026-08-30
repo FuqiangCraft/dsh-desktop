@@ -4,6 +4,9 @@ node_modules/
 # JavaScript build output
 packages/*/lib/
 packages/*/dist/
+dist-electron/
+dist-electron*/
+.tmp*
 *.tgz
 
 # Packaging output and recovery/diagnostic residues

@@ -43,7 +43,6 @@ export const DesktopSettingsSection: React.FC<DesktopSettingsSectionProps> = ({ 
     })
     return () => { cancelled = true }
   }, [])
-
   return (
     <div className="dsh_desktop_settingsSection dsh_desktop_petSettings">
       <div className="dsh_desktop_petPageHeader">
@@ -109,6 +108,7 @@ export const DesktopSettingsSection: React.FC<DesktopSettingsSectionProps> = ({ 
           </div>
         </div>
       </div>
+
     </div>
   )
 }

@@ -12,7 +12,7 @@ test('settings store has expected default values', () => {
   resetDesktopSettings()
   const settings = getDesktopSettings()
 
-  assert.equal(settings.petEnabled, true)
+  assert.equal(settings.petEnabled, false)
   assert.equal(settings.petCharacter, 'robot')
   assert.equal(settings.petSize, 100)
 })
