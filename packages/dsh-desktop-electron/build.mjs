@@ -16,3 +16,14 @@ rmSync('dist', { recursive: true, force: true })
 await build({ ...common, entryPoints: ['src/main.ts'], outfile: 'dist/main.cjs', format: 'cjs' })
 await build({ ...common, entryPoints: ['src/preload.ts'], outfile: 'dist/preload.cjs', format: 'cjs' })
 await build({ ...common, entryPoints: ['src/tray-preload.ts'], outfile: 'dist/tray-preload.cjs', format: 'cjs' })
+await build({ ...common, entryPoints: ['src/runtime/port-probe.ts'], outfile: 'dist/runtime/port-probe.js', format: 'esm' })
+await build({
+  ...common,
+  entryPoints: ['src/runtime/profile-manager.ts'],
+  outfile: 'dist/runtime/profile-manager.js',
+  format: 'esm',
+  banner: {
+    js: "import { fileURLToPath as __dshFileURLToPath } from 'node:url'; import { dirname as __dshDirname } from 'node:path'; const __filename = __dshFileURLToPath(import.meta.url); const __dirname = __dshDirname(__filename);",
+  },
+})
+await build({ ...common, entryPoints: ['src/runtime/settings-store.ts'], outfile: 'dist/runtime/settings-store.js', format: 'esm' })

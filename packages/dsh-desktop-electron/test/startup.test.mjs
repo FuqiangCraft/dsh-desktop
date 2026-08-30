@@ -27,7 +27,7 @@ test('CommonJS bundle path resolution does not depend on import.meta', () => {
 })
 
 test('Windows package keeps only supported Chromium locales', () => {
-  assert.match(builder, /electronLanguages:\n  - en-US\n  - zh-CN/)
+  assert.match(builder, /electronLanguages:\r?\n  - en-US\r?\n  - zh-CN/)
   assert.match(builder, /win32-arm64/)
   assert.match(builder, /darwin-\*/)
 })

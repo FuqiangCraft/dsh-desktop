@@ -34,7 +34,8 @@ test('DesktopProfileManager initializes isolated desktop profile with default bu
     const patchContent = fs.readFileSync(manager.paths.patchPath, 'utf8')
     assert.match(patchContent, /openBrowser:\s*false/, 'Must disable external browser opening')
     assert.match(patchContent, /printUrl:\s*false/, 'Must disable printing url')
-    assert.match(patchContent, /directory-picker-native/, 'Must use native directory picker')
+    assert.match(patchContent, /directory-picker-browse/, 'Must use the in-app directory browser')
+    assert.doesNotMatch(patchContent, /directory-picker-native/, 'Must not use the removed native picker')
   })
 })
 

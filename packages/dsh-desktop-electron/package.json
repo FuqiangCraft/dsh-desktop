@@ -9,7 +9,7 @@
   "scripts": {
     "build": "node scripts/verify-runtime.mjs && node build.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/*.test.mjs",
+    "test": "node build.mjs && node --test test/*.test.mjs",
     "package:dir": "pnpm build && electron-builder --dir --config electron-builder.yml --publish never",
     "package:win": "pnpm build && electron-builder --win nsis portable --config electron-builder.yml --publish never"
   },

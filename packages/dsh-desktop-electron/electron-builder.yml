@@ -1,5 +1,6 @@
 appId: com.deepseek.harness.desktop
 productName: DSH Desktop
+asar: true
 artifactName: DSH-Desktop-${version}-${arch}.${ext}
 directories:
   output: dist-electron
