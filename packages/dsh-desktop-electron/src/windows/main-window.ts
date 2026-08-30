@@ -17,6 +17,8 @@ export class MainWindowManager {
       show: false,
       title: 'DeepSeek Harness Desktop',
       icon: iconPath,
+      frame: false,
+      titleBarStyle: 'hidden',
       webPreferences: {
         preload: preloadPath,
         contextIsolation: true,

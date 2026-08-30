@@ -1,6 +1,6 @@
 {
   "name": "deepseek-harness-desktop-pro",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "private": true,
   "description": "The Ultimate Next-Generation Desktop Plugin & Native Client for DeepSeek Harness",
   "type": "module",
@@ -8,13 +8,16 @@
     "build": "pnpm -r run build",
     "dev:electron": "pnpm --filter @dsh-community/dsh-desktop-electron dev",
     "dev:plugin": "pnpm --filter @mixian/dsh-desktop-plugin dev",
-    "package:electron": "pnpm --filter @dsh-community/dsh-desktop-electron package",
-    "lint": "oxlint --ignore-pattern '**/lib/**' --ignore-pattern '**/dist/**' --ignore-pattern '**/target/**' .",
+    "dev": "pnpm --dir packages/dsh-desktop-electron exec electron .",
+    "electron:typecheck": "pnpm --dir packages/dsh-desktop-electron typecheck",
+    "electron:test": "pnpm --dir packages/dsh-desktop-electron test",
+    "electron:build": "pnpm --dir packages/dsh-desktop-electron build",
+    "electron:package": "pnpm --dir packages/dsh-desktop-electron package:dir",
+    "lint": "oxlint --ignore-pattern '**/lib/**' --ignore-pattern '**/target/**' .",
     "typecheck": "pnpm -r --if-present run typecheck",
-    "test": "node --test test/license.test.mjs test/metadata.test.mjs packages/dsh-desktop-electron/test/electron-structure.test.mjs packages/dsh-desktop-electron/test/port-probe.test.mjs packages/dsh-desktop-electron/test/profile-manager.test.mjs packages/dsh-desktop-electron/test/settings-store.test.mjs packages/dsh-desktop-plugin/test/locales.test.mjs packages/dsh-desktop-plugin/test/config.test.mjs packages/dsh-desktop-plugin/test/screen-capture.test.mjs packages/dsh-desktop-plugin/test/notifier.test.mjs packages/dsh-desktop-plugin/test/settings.test.mjs packages/dsh-desktop-plugin/test/pet-state.test.mjs",
-    "verify:runtime": "node scripts/verify-runtime-closure.mjs",
+    "test": "node --test test/license.test.mjs test/metadata.test.mjs packages/dsh-desktop-plugin/test/locales.test.mjs packages/dsh-desktop-plugin/test/config.test.mjs packages/dsh-desktop-plugin/test/screen-capture.test.mjs packages/dsh-desktop-plugin/test/notifier.test.mjs packages/dsh-desktop-plugin/test/settings.test.mjs packages/dsh-desktop-plugin/test/pet-state.test.mjs",
     "verify:bundle": "node scripts/verify-bundle.mjs",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm --filter @mixian/dsh-desktop-plugin build && pnpm --filter @dsh-community/dsh-desktop-electron build && pnpm verify:runtime && pnpm verify:bundle"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm electron:typecheck && pnpm electron:test && pnpm electron:build && pnpm --filter @mixian/dsh-desktop-plugin build && pnpm verify:bundle"
   },
   "keywords": [
     "deepseek",
@@ -23,7 +26,6 @@
     "dsh-plugin",
     "cordis",
     "desktop",
-    "tauri",
     "raycast",
     "agent"
   ],

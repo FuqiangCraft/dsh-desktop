@@ -24,7 +24,7 @@ export interface HostInstance {
 }
 
 const NAME = 'dsh-desktop'
-const require = createRequire(import.meta.url)
+const require = createRequire(__filename)
 
 function resolveShippedAgentPresets(): string {
   if (app.isPackaged) return path.join(process.resourcesPath, 'agent-presets')

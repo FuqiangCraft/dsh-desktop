@@ -24,10 +24,10 @@ export const DEFAULT_DESKTOP_PATCH = `# Desktop profile cordis patch
 - id: directory-picker
   disabled: true
 - insert:
-    - id: directory-picker-native
-      name: '@deepseek-ai/dsh-host-directory-picker-native'
-    - id: ui-directory-picker-native
-      name: '@deepseek-ai/dsh-client-ui-directory-picker-native'
+    - id: directory-picker-browse
+      name: '@deepseek-ai/dsh-host-directory-picker-browse'
+    - id: ui-directory-picker-browse
+      name: '@deepseek-ai/dsh-client-ui-directory-picker-browse'
 - id: web-runtime
   config:
     openBrowser: false
@@ -102,6 +102,13 @@ export class DesktopProfileManager {
 
     if (!fs.existsSync(this.paths.patchPath)) {
       fs.writeFileSync(this.paths.patchPath, DEFAULT_DESKTOP_PATCH, 'utf8')
+    } else {
+      // Migrate profiles created by older desktop builds from the native
+      // Windows picker to DSH Web's in-app directory browser.
+      const existingPatch = fs.readFileSync(this.paths.patchPath, 'utf8')
+      if (existingPatch.includes('directory-picker-native')) {
+        fs.writeFileSync(this.paths.patchPath, DEFAULT_DESKTOP_PATCH, 'utf8')
+      }
     }
 
     // cordis.yml is always written as empty root entry list

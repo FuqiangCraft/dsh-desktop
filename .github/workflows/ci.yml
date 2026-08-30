@@ -43,5 +43,15 @@ jobs:
           pnpm run typecheck
           pnpm run test
 
+      - name: Build plugin
+        run: pnpm --filter @mixian/dsh-desktop-plugin build
+
+      - name: Check Electron desktop shell
+        if: runner.os == 'Windows'
+        run: |
+          pnpm run electron:typecheck
+          pnpm run electron:test
+          pnpm run electron:build
+
       - name: Verify bundle integrity
         run: pnpm run verify:bundle

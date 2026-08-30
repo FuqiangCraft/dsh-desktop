@@ -13,18 +13,16 @@ const PETS: Array<{ id: DesktopSettings['petCharacter']; name: DesktopKey; descr
   { id: 'cat', name: 'settings.petCharacter.cat', description: 'settings.petCharacter.catDesc', image: catPreview },
 ]
 
-const invokeBridge = (method: string, payload?: unknown) => {
-  if (typeof window === 'undefined') return undefined
-  const bridge = (window as unknown as Record<string, any>).__DSH_DESKTOP_BRIDGE__
-  if (bridge && typeof bridge[method] === 'function') {
-    try {
-      return bridge[method](payload)
-    } catch {
-      return undefined
-    }
-  }
-  return undefined
+interface DesktopBridgeFace {
+  getPetResourcePath?: () => Promise<string>
+  listPetResources?: () => Promise<string[]>
+  readPetResource?: (name: string) => Promise<string | null>
+  openPetResourceFolder?: () => Promise<void>
 }
+
+const bridge = (): DesktopBridgeFace | undefined => (window as unknown as {
+  __DSH_DESKTOP_BRIDGE__?: DesktopBridgeFace
+}).__DSH_DESKTOP_BRIDGE__
 
 export const DesktopSettingsSection: React.FC<DesktopSettingsSectionProps> = ({ t }) => {
   const [settings, setSettings] = useState<DesktopSettings>(getDesktopSettings)
@@ -32,18 +30,14 @@ export const DesktopSettingsSection: React.FC<DesktopSettingsSectionProps> = ({ 
   const [customPets, setCustomPets] = useState<Array<{ name: string; preview: string }>>([])
 
   useEffect(() => subscribeDesktopSettings(setSettings), [])
-  useEffect(() => {
-    void Promise.resolve(invokeBridge('get_pet_resource_path')).then((path) => {
-      if (typeof path === 'string') setResourcePath(path)
-    })
-  }, [])
+  useEffect(() => { void Promise.resolve(bridge()?.getPetResourcePath?.()).then((path) => { if (typeof path === 'string') setResourcePath(path) }) }, [])
   useEffect(() => {
     let cancelled = false
-    void Promise.resolve(invokeBridge('list_pet_resources')).then(async (names) => {
+    void Promise.resolve(bridge()?.listPetResources?.()).then(async (names) => {
       if (!Array.isArray(names) || cancelled) return
       const pets = await Promise.all((names as string[]).map(async (name) => ({
         name,
-        preview: (await Promise.resolve(invokeBridge('read_pet_resource', { name }))) as string,
+        preview: (await Promise.resolve(bridge()?.readPetResource?.(name))) as string,
       })))
       if (!cancelled) setCustomPets(pets)
     })
@@ -100,7 +94,7 @@ export const DesktopSettingsSection: React.FC<DesktopSettingsSectionProps> = ({ 
         })}
         <div className="dsh_desktop_petResourceRow">
           <div><div className="dsh_desktop_petName">自定义宠物</div><div className="dsh_desktop_petPath">{resourcePath}</div></div>
-          <button className="dsh_desktop_petFolderButton" type="button" onClick={() => { void invokeBridge('open_pet_resource_folder') }}>打开文件夹 ↗</button>
+          <button className="dsh_desktop_petFolderButton" type="button" onClick={() => { void bridge()?.openPetResourceFolder?.() }}>打开文件夹 ↗</button>
         </div>
       </div>
 

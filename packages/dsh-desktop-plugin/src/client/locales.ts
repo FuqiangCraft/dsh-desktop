@@ -23,6 +23,7 @@ export const zh = {
   'canvas.status.running': '运行中',
   'canvas.status.idle': '空闲',
   'canvas.status.waiting': '等待中',
+  'canvas.status.done': '已完成',
   'canvas.turn': '轮次',
   'canvas.open': '打开会话',
 
@@ -122,6 +123,7 @@ export const en: Record<DesktopKey, string> = {
   'canvas.status.running': 'Running',
   'canvas.status.idle': 'Idle',
   'canvas.status.waiting': 'Waiting',
+  'canvas.status.done': 'Completed',
   'canvas.turn': 'Turn',
   'canvas.open': 'Open session',
 

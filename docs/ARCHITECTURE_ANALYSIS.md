@@ -124,27 +124,26 @@
 ## 三、“超越社区现有方案”的下一代桌面端旗舰方案设计
 
 我们要打造的 **`DeepSeek Harness Desktop Pro` (`dsh-desktop-pro`)**，采用 **双模无缝融合架构（Hybrid Microkernel Architecture）**：
-既是一个 **标准的官方级 Cordis 插件**（可直接发布到 DSH 插件市场并通过 `cordis.patch.yml` 加载），也是一个 **基于 Tauri 2.0 + Rust 的高性能极轻量独立桌面客户端**！
+既是一个 **标准的官方级 Cordis 插件**（可直接发布到 DSH 插件市场并通过 `cordis.patch.yml` 加载），也是一个 **基于 Electron 的独立桌面客户端**——主进程内嵌 cordis host，直接运行完整的 dsh 运行时，无需用户全局安装 dsh。
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                      DeepSeek Harness Desktop Pro                           │
 ├───────────────────────────────────┬─────────────────────────────────────────┤
-│    A. Tauri 2.0 Native Desktop    │      B. DSH Cordis Plugin (Host+Client) │
+│    A. Electron Native Desktop     │      B. DSH Cordis Plugin (Host+Client) │
 │  ┌─────────────────────────────┐  │  ┌────────────────────────────────────┐ │
-│  │ Rust Native Core            │  │  │ Host Plugin (Node.js / Cordis)     │ │
-│  │ • Global Hotkey (Alt+Space) │◄─┼──┤ • Desktop Bridge Service           │ │
-│  │ • Spotlight Floating HUD    │  │  │ • Native Notification & Tray Pusher│ │
+│  │ Electron Main Process       │  │  │ Host Plugin (Node.js / Cordis)     │ │
+│  │ • In-process dsh host boot  │◄─┼──┤ • Desktop Bridge Service           │ │
+│  │ • Tray & Frameless Window   │  │  │ • Native Notification & Tray Pusher│ │
 │  │ • Native Screen Capture     │  │  │ • OS DirectoryPicker Provider      │ │
-│  │ • Memory < 40MB, Boot <300ms│  │  │ • Subagent Live Telemetry Seam     │ │
+│  │ • Auto-Update (GitHub)      │  │  │ • Subagent Live Telemetry Seam     │ │
 │  └──────────────┬──────────────┘  │  └──────────────────┬─────────────────┘ │
-│                 │ IPC / WebSocket │                     │ React Slots       │
+│                 │ __DSH_DESKTOP_BRIDGE__ IPC                │ React Slots       │
 │                 ▼                 │                     ▼                   │
 │  ┌─────────────────────────────┐  │  ┌────────────────────────────────────┐ │
 │  │ Multi-Session Canvas UI     │  │  │ Client Plugin (dsh.client)         │ │
-│  │ • Tiling Agent Workspace    │  │  │ • Detach to Native Window Button   │ │
-│  │ • Trajectory Time-Traveler  │  │  │ • Floating HUD Quick Trigger       │ │
-│  │ • Visual Config / Market UI │  │  │ • System Status Badge & Quick Dock │ │
+│  │ • Tiling Agent Workspace    │  │  │ • Embedded Web UI (loadUrl)        │ │
+│  │ • Visual Config / Market UI │ │  │ • System Status Badge & Quick Dock │ │
 │  └─────────────────────────────┘  │  └────────────────────────────────────┘ │
 └───────────────────────────────────┴─────────────────────────────────────────┘
 ```
@@ -153,7 +152,7 @@
 
 | 序号 | 核心特性 | 传统社区方案 / Web 版 | **DSH Desktop Pro (本方案)** |
 |:---:|:---|:---|:---|
-| 1 | **启动与内存占用** | 内存 >400MB，启动 >5s | **Tauri 2.0 + Rust，内存 <40MB，冷启动 <300ms** |
+| 1 | **开箱即用** | 需自备 Node.js 与 dsh 运行时，多步配置 | **单一安装包内置完整 dsh host，装完即用** |
 | 2 | **全局快捷交互 (HUD)** | 无，必须手动切回浏览器窗口 | **`Alt+Space` 呼出 Raycast 式极简悬浮胶囊，无需切换上下文** |
 | 3 | **深度 OS 系统集成** | 仅有简单网页弹窗 | **原生托盘气泡、任务完成音效、一键审批、原生剪贴板监听、全屏/区域截屏直投 Prompt** |
 | 4 | **原生能力接缝替换** | 网页端虚拟文件树 | **以最高优先级无缝替换 `ctx.directoryPicker` 为原生 OS 原生文件/目录选择器** |
@@ -166,7 +165,7 @@
 
 整个项目采用模块化 Monorepo 组织：
 - **`packages/dsh-desktop-plugin`**：满足官方规范的 Cordis 双面插件（可独立发包并上架 DSH 插件市场）。
-- **`packages/dsh-desktop-app`**：Tauri 2.0 原生桌面外壳工程（与 Host 插件通过高效本地 WebSocket / IPC 通信）。
+- **`packages/dsh-desktop-electron`**：Electron 桌面外壳工程（主进程内嵌 cordis host，与插件 client 通过 `__DSH_DESKTOP_BRIDGE__` IPC 通信）。
 - **`docs/PUBLISHING_GUIDE.md`**：完整的发布、打包、签名与社区市场索引接入指南。
 
 ---
@@ -180,6 +179,7 @@
 3. **`cordis.patch.yml` 规范写法**是顶层 `- insert:` 行数组（`dsh-notification` 已验证），或直接 `- id:` 行。
 4. **插件不能通过 `(ctx as any).directoryPicker = {...}` 覆盖服务**——绕过 Cordis 服务机制。真实 seam 需 subclass `DirectoryPicker extends Service`。**且仓库已自带 `directory-picker-native`**，"原生目录选择器"不是差异化点。
 5. **审批/提问的 seam 是 `ctx.userQuestions`（唯一 provider，注册第二个抛 `DUPLICATE_PROVIDER`）**，默认由 `api-gateway` 行持有。因此本插件采用**客户端方案**：订阅 mux 流 `question/requested` → `PendingWait.answer()` 通道，而非注册自己的 provider。
-6. **发布的 npm 运行时比仓库 master 旧**：`shell.overlay` 插槽只在 master，`@deepseek-ai/dsh-client-*@0.0.1-rc.1` 没有它。浮动 HUD 因此暂缓挂载（`AttentionCard.tsx` 已备好）。
+6. **发布的 npm 运行时比仓库 master 旧**：`shell.overlay` 插槽只在 master，`@deepseek-ai/dsh-client-*@0.0.1-rc.1` 没有它。浮动 HUD 因此未实现（备件组件已移除，插槽发布后再评估）。
 7. **npm rc 生态有断依赖**：6 个未发布的内部包（`dsh-compact`、`dsh-type-meta`、`dsh-user-interaction`、`dsh-paths`、`dsh-tasks`、`dsh-client-ui-slash`）。本仓库用 `stubs/` type-stub + pnpm workspace override 绕过（详见 `pnpm-workspace.yaml`）。
 8. **客户端 bundle 是单文件 + ModuleLoader 握手**，不是普通 ESM：`window.__ModuleLoader__.load({ id, factory })`，esbuild `banner`/`footer` 实现（见 `build.mjs`）。
+9. **桌面外壳已迁移到 Electron**：初版的 Rust 原生壳方案（`packages/dsh-desktop-app`）已被 `packages/dsh-desktop-electron` 取代——Electron 主进程内嵌 cordis host 直接运行 dsh 运行时，插件与外壳统一走 `__DSH_DESKTOP_BRIDGE__` 单一 IPC 通道。上文涉及原生壳的描述均已按此更新。

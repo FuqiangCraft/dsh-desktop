@@ -27,7 +27,7 @@ pnpm run check
   - `src/client/notifier.ts`: Real-time desktop notifications for pending interactions.
   - `src/client/MultiAgentCanvas.tsx`: Multi-agent tiling status grid in `conversation.view`.
   - `src/client/locales.ts`: Full bilingual (ZH / EN) dictionaries.
-- `packages/dsh-desktop-app`: Lightweight native Tauri desktop shell embedding DSH.
+- `packages/dsh-desktop-electron`: Electron desktop shell embedding DSH.
 - `stubs/`: Workspace type stubs for unpublished internal DSH packages.
 - `scripts/verify-bundle.mjs`: Automated bundle integrity and manifest validator.
 

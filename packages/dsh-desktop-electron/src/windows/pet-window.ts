@@ -5,12 +5,21 @@ export class PetWindowManager {
   private window: BrowserWindow | null = null
   private readonly settingsStore: DesktopSettingsStore
   private moveTimer: NodeJS.Timeout | null = null
+  private preloadPath: string | null = null
+  private petHtmlPath: string | null = null
 
   constructor(settingsStore: DesktopSettingsStore) {
     this.settingsStore = settingsStore
   }
 
+  public configure(preloadPath: string, petHtmlPath: string): void {
+    this.preloadPath = preloadPath
+    this.petHtmlPath = petHtmlPath
+  }
+
   public createWindow(preloadPath: string, petHtmlPath: string): BrowserWindow {
+    this.preloadPath = preloadPath
+    this.petHtmlPath = petHtmlPath
     if (this.window && !this.window.isDestroyed()) {
       return this.window
     }
@@ -33,6 +42,9 @@ export class PetWindowManager {
       y,
       frame: false,
       transparent: true,
+      // WS_THICKFRAME (default on frameless Windows windows) draws a faint
+      // light strip along the top edge of a transparent window.
+      thickFrame: false,
       backgroundColor: '#00000000',
       title: '',
       alwaysOnTop: true,
@@ -70,6 +82,9 @@ export class PetWindowManager {
   }
 
   public syncSettings(settings: DesktopSettings): void {
+    if ((!this.window || this.window.isDestroyed()) && settings.petEnabled && this.preloadPath && this.petHtmlPath) {
+      this.createWindow(this.preloadPath, this.petHtmlPath)
+    }
     if (!this.window || this.window.isDestroyed()) return
 
     if (settings.petEnabled) {

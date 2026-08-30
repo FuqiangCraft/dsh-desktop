@@ -1,6 +1,6 @@
 /**
  * Desktop Pet State Engine: derives pet state from live sessions and
- * dispatches state/animation updates to Tauri floating companion window.
+ * dispatches state/animation updates to the native companion window.
  */
 import type { DesktopKey } from '../locales.ts'
 import type { SessionsListFace, DesktopInteractionStatus } from '../notifier.ts'
@@ -27,14 +27,7 @@ export function setupPetStateEngine(sessions: SessionsListFace, t: T): () => voi
 
   const dispatchToHost = (state: PetLiveState, text?: string) => {
     if (typeof window === 'undefined') return
-    const bridge = (window as unknown as { __DSH_DESKTOP_BRIDGE__?: { updatePetState?: (state: string, text: string) => void } }).__DSH_DESKTOP_BRIDGE__
-    if (bridge?.updatePetState) {
-      try {
-        bridge.updatePetState(state, text ?? '')
-      } catch {
-        // ignore
-      }
-    }
+    window.__DSH_DESKTOP_BRIDGE__?.updatePetState(state, text ?? '')
   }
 
   const update = () => {
@@ -73,7 +66,7 @@ export function setupPetStateEngine(sessions: SessionsListFace, t: T): () => voi
       } else if (previousState === 'thinking' || previousState === 'working') {
         // Just transitioned from running to stopped -> show success celebration
         nextState = 'success'
-        statusText = '已完成'
+        statusText = t('canvas.status.done')
         if (successTimer) clearTimeout(successTimer)
         successTimer = setTimeout(() => {
           previousState = 'idle'

@@ -24,16 +24,16 @@ test('settings UI offers desktop companion characters without skin controls', as
   assert.match(source, /id: 'cat'/)
   assert.doesNotMatch(source, /woodfish/)
   assert.match(source, /dsh_desktop_petThumbnail/)
-  assert.match(source, /get_pet_resource_path/)
-  assert.match(source, /open_pet_resource_folder/)
+  assert.match(source, /getPetResourcePath/)
+  assert.match(source, /openPetResourceFolder/)
 
   assert.doesNotMatch(source, /PRESET_SKINS|skinTheme|get_skin_resource_path|save_skin_resource/)
 })
 
-test('pet previews are bundled instead of loaded from the cross-origin Tauri protocol', async () => {
+test('pet previews are bundled instead of loaded from a cross-origin protocol', async () => {
   const source = await readFile(new URL('../src/client/settings/DesktopSettingsSection.tsx', import.meta.url), 'utf8')
   const build = await readFile(new URL('../build.mjs', import.meta.url), 'utf8')
-  assert.doesNotMatch(source, /http:\/\/tauri\.localhost/, 'remote DSH pages cannot load Tauri protocol thumbnails')
+  assert.doesNotMatch(source, /https?:\/\/\w+\.localhost/, 'preview images must not load from a cross-origin protocol')
   assert.match(source, /import robotPreview from ['"]\.\.\/assets\/dsh-companion\.png['"]/)
   assert.match(build, /loader:\s*\{\s*['"]\.png['"]:\s*['"]dataurl['"]\s*\}/, 'preview images must be self-contained in the plugin bundle')
 })
@@ -89,5 +89,23 @@ test('syncs settings with native bridge when available', () => {
   assert.equal(bridgePayload.petEnabled, false)
   assert.equal(bridgePayload.petSize, 90)
 
+  delete globalThis.window
+})
+
+test('syncs character changes through the desktop bridge', async () => {
+  const calls = []
+  globalThis.window = {
+    __DSH_DESKTOP_BRIDGE__: {
+      syncSettings(settings) {
+        calls.push(settings)
+      },
+    },
+    localStorage: { getItem() { return null }, setItem() {} },
+  }
+
+  updateDesktopSettings({ petCharacter: 'whale' })
+  await Promise.resolve()
+
+  assert.deepEqual(calls, [getDesktopSettings()])
   delete globalThis.window
 })

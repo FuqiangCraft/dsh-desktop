@@ -1,6 +1,5 @@
 import path from 'node:path'
 import fs from 'node:fs'
-import http from 'node:http'
 import { app, ipcMain, Notification, shell } from 'electron'
 import { DesktopSettingsStore, type DesktopSettings } from './runtime/settings-store.ts'
 import { DesktopProfileManager } from './runtime/profile-manager.ts'
@@ -10,6 +9,7 @@ import { PetWindowManager } from './windows/pet-window.ts'
 import { TrayMenuManager } from './windows/tray-menu.ts'
 import { getCurrentDir } from './runtime/paths.ts'
 import { DesktopUpdateManager } from './runtime/update-manager.ts'
+import { installApplicationMenu, openApplicationSubmenu } from './windows/application-menu.ts'
 
 const currentDir = getCurrentDir()
 
@@ -52,6 +52,8 @@ class DesktopApplication {
   private readonly petWinManager: PetWindowManager
   private readonly trayMenuManager: TrayMenuManager
   private readonly updateManager: DesktopUpdateManager
+  private bootPromise: Promise<boolean> | null = null
+  private quitInProgress = false
 
   private readonly preloadPath: string
   private readonly iconPath: string
@@ -59,6 +61,7 @@ class DesktopApplication {
   private readonly recoveryHtmlPath: string
   private readonly trayPreloadPath: string
   private readonly trayMenuHtmlPath: string
+  private applicationMenu: Electron.Menu | null = null
 
   constructor() {
     this.settingsStore = new DesktopSettingsStore()
@@ -94,17 +97,32 @@ class DesktopApplication {
       // Keep app alive in tray on Windows/macOS
     })
 
-    app.on('before-quit', async (_e) => {
+    app.on('before-quit', (event) => {
+      if (this.quitInProgress) return
+      event.preventDefault()
+      this.quitInProgress = true
       this.mainWinManager.setQuitting(true)
-      try {
-        await this.hostRunner.stop()
-      } catch {
-        // ignore shutdown error
-      }
+      const stop = this.hostRunner.stop().catch(() => undefined)
+      const timeout = new Promise<void>((resolve) => setTimeout(resolve, 2500))
+      void Promise.race([stop, timeout]).finally(() => app.exit(0))
     })
   }
 
   private registerIpcHandlers(): void {
+    ipcMain.on('dsh:window-control', (_event, action: 'minimize' | 'maximize' | 'close') => {
+      const win = this.mainWinManager.getWindow()
+      if (!win) return
+      if (action === 'minimize') win.minimize()
+      else if (action === 'maximize') {
+        if (win.isMaximized()) win.unmaximize()
+        else win.maximize()
+      }
+      else win.close()
+    })
+    ipcMain.on('dsh:open-application-menu', (event, label: string, x: number, y: number) => {
+      const win = this.mainWinManager.getWindow()
+      if (win && this.applicationMenu) openApplicationSubmenu(this.applicationMenu, label, win, x, y)
+    })
     ipcMain.on('dsh:notify', (_event, payload) => {
       if (Notification.isSupported()) {
         const notif = new Notification({
@@ -141,6 +159,10 @@ class DesktopApplication {
 
     ipcMain.on('dsh:sync-recent-sessions', (_event, sessions) => {
       this.trayMenuManager.setRecentSessions(sessions)
+    })
+
+    ipcMain.handle('dsh:get-pet-resource-path', () => {
+      return this.settingsStore.getPetsDir()
     })
 
     ipcMain.handle('dsh:open-pet-resource-folder', async () => {
@@ -185,7 +207,15 @@ class DesktopApplication {
 
     // 1. Create windows
     this.mainWinManager.createWindow(this.preloadPath, this.iconPath)
-    this.petWinManager.createWindow(this.preloadPath, this.petHtmlPath)
+    this.applicationMenu = installApplicationMenu(this.mainWinManager.getWindow()!, {
+      onNewChat: () => {
+        const win = this.mainWinManager.getWindow()
+        if (win) void win.webContents.executeJavaScript('window.__DSH_DESKTOP_NEW_CHAT__?.()')
+      },
+      onCheckForUpdates: () => { void this.updateManager.checkForUpdates(true) },
+    })
+    // The companion is created lazily by syncSettings when the user enables it.
+    this.petWinManager.configure(this.preloadPath, this.petHtmlPath)
     this.trayMenuManager.createTray(this.iconPath)
 
     // Sync initial settings to pet window (keeps it hidden by default)
@@ -193,40 +223,31 @@ class DesktopApplication {
 
     // 2. Boot Host and load URL
     await this.bootAndLoad()
+    traceStartup('startup-complete')
   }
 
-  private async waitForHttpReady(origin: string, timeoutMs = 10000): Promise<void> {
-    const start = Date.now()
-    while (Date.now() - start < timeoutMs) {
-      try {
-        const ready = await new Promise<boolean>((resolve) => {
-          const req = http.get(origin, (res) => {
-            res.resume()
-            resolve(res.statusCode === 200)
-          })
-          req.on('error', () => resolve(false))
-          req.setTimeout(1000, () => {
-            req.destroy()
-            resolve(false)
-          })
-        })
-        if (ready) return
-      } catch {
-        // retry
-      }
-      await new Promise((resolve) => setTimeout(resolve, 150))
+  private bootAndLoad(): Promise<boolean> {
+    if (this.bootPromise) {
+      traceStartup('host-boot-reused-in-flight')
+      return this.bootPromise
     }
-    throw new Error(`Web server at ${origin} did not become ready within ${timeoutMs}ms`)
+    this.bootPromise = this.bootAndLoadInternal().finally(() => {
+      this.bootPromise = null
+    })
+    return this.bootPromise
   }
 
-  private async bootAndLoad(): Promise<boolean> {
+  private async bootAndLoadInternal(): Promise<boolean> {
+    const startedAt = Date.now()
     traceStartup('host-boot-start')
     try {
       const instance = await this.hostRunner.start()
       traceStartup(`host-boot-ready origin=${instance.origin}`)
-      await this.waitForHttpReady(instance.origin)
-      traceStartup(`host-http-ready origin=${instance.origin}`)
+      // The cordis boot() promise resolves only after the embedded web server
+      // is listening, so no readiness polling is needed before loading the UI;
+      // loadUrl's own retry loop absorbs any transient first-load hiccup.
       await this.mainWinManager.loadUrl(instance.origin)
+      traceStartup(`host-boot-duration-ms=${Date.now() - startedAt}`)
       return true
     } catch (err: any) {
       traceStartup(`host-boot-failed error=${formatStartupError(err)}`)
@@ -235,6 +256,7 @@ class DesktopApplication {
         this.recoveryHtmlPath,
         formatStartupError(err),
       )
+      traceStartup(`host-boot-failed-duration-ms=${Date.now() - startedAt}`)
       return false
     }
   }

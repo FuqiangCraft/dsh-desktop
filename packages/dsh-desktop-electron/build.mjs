@@ -1,75 +1,29 @@
-import * as esbuild from 'esbuild'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import fs from 'node:fs'
+import { build } from 'esbuild'
+import { rmSync } from 'node:fs'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const outDir = path.join(__dirname, 'dist')
-
-if (!fs.existsSync(outDir)) {
-  fs.mkdirSync(outDir, { recursive: true })
+const common = {
+  bundle: true,
+  platform: 'node',
+  target: 'node22',
+  sourcemap: false,
+  external: ['electron', '@deepseek-ai/*', '@mixian/*', 'electron-updater'],
+  logLevel: 'info',
 }
 
-// 1. Build main process
-await esbuild.build({
-  entryPoints: [path.join(__dirname, 'src/main.ts')],
-  outfile: path.join(outDir, 'main.js'),
-  bundle: true,
-  platform: 'node',
-  target: 'node22',
+// Start from a clean dist so stale artifacts (e.g. leftovers from the source
+// recovery incident) can never ship inside the packaged app.
+rmSync('dist', { recursive: true, force: true })
+await build({ ...common, entryPoints: ['src/main.ts'], outfile: 'dist/main.cjs', format: 'cjs' })
+await build({ ...common, entryPoints: ['src/preload.ts'], outfile: 'dist/preload.cjs', format: 'cjs' })
+await build({ ...common, entryPoints: ['src/tray-preload.ts'], outfile: 'dist/tray-preload.cjs', format: 'cjs' })
+await build({ ...common, entryPoints: ['src/runtime/port-probe.ts'], outfile: 'dist/runtime/port-probe.js', format: 'esm' })
+await build({
+  ...common,
+  entryPoints: ['src/runtime/profile-manager.ts'],
+  outfile: 'dist/runtime/profile-manager.js',
   format: 'esm',
-  sourcemap: true,
-  external: [
-    'electron',
-    'electron-updater',
-    'koffi',
-    'node-pty',
-    '@deepseek-ai/*',
-    '@mixian/*',
-    'js-yaml',
-    'open',
-  ],
+  banner: {
+    js: "import { fileURLToPath as __dshFileURLToPath } from 'node:url'; import { dirname as __dshDirname } from 'node:path'; const __filename = __dshFileURLToPath(import.meta.url); const __dirname = __dshDirname(__filename);",
+  },
 })
-
-// 2. Build preload script
-await esbuild.build({
-  entryPoints: [path.join(__dirname, 'src/preload.ts')],
-  outfile: path.join(outDir, 'preload.cjs'),
-  bundle: true,
-  platform: 'node',
-  target: 'node22',
-  format: 'cjs',
-  sourcemap: true,
-  external: ['electron'],
-})
-
-await esbuild.build({
-  entryPoints: [path.join(__dirname, 'src/tray-preload.ts')],
-  outfile: path.join(outDir, 'tray-preload.cjs'),
-  bundle: true,
-  platform: 'node',
-  target: 'node22',
-  format: 'cjs',
-  sourcemap: true,
-  external: ['electron'],
-})
-
-// 3. Build runtime modules for unit testing
-await esbuild.build({
-  entryPoints: [
-    path.join(__dirname, 'src/runtime/port-probe.ts'),
-    path.join(__dirname, 'src/runtime/settings-store.ts'),
-    path.join(__dirname, 'src/runtime/profile-manager.ts'),
-    path.join(__dirname, 'src/runtime/host-runner.ts'),
-    path.join(__dirname, 'src/runtime/paths.ts'),
-  ],
-  outdir: path.join(outDir, 'runtime'),
-  bundle: true,
-  packages: 'external',
-  platform: 'node',
-  target: 'node22',
-  format: 'esm',
-  sourcemap: true,
-})
-
-console.log('Build completed: dist/main.js, dist/preload.cjs, dist/tray-preload.cjs, dist/runtime/*.js')
+await build({ ...common, entryPoints: ['src/runtime/settings-store.ts'], outfile: 'dist/runtime/settings-store.js', format: 'esm' })

@@ -87,16 +87,15 @@ export function updateDesktopSettings(patch: Partial<DesktopSettings>): DesktopS
   return currentSettings
 }
 
-/** Push a settings snapshot to the native shell through the Electron bridge. */
+/** Push a settings snapshot to the native shell through the desktop bridge. */
 export function syncDesktopSettingsToHost(settings: DesktopSettings): void {
-  if (typeof window !== 'undefined') {
-    const bridge = (window as unknown as { __DSH_DESKTOP_BRIDGE__?: { syncSettings?: (settings: DesktopSettings) => void } }).__DSH_DESKTOP_BRIDGE__
-    if (bridge?.syncSettings) {
-      try {
-        bridge.syncSettings(settings)
-      } catch {
-        // bridge invocation failure is non-fatal
-      }
+  if (typeof window === 'undefined') return
+  const bridge = (window as unknown as { __DSH_DESKTOP_BRIDGE__?: { syncSettings?: (settings: DesktopSettings) => void } }).__DSH_DESKTOP_BRIDGE__
+  if (bridge?.syncSettings) {
+    try {
+      bridge.syncSettings(settings)
+    } catch {
+      // bridge invocation failure is non-fatal
     }
   }
 }

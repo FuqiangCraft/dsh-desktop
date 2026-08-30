@@ -7,10 +7,6 @@
  * Companion settings into the DSH native `settings.section` slot, and the
  * pet state engine driving the floating companion window.
  * All registrations are fiber effects, so unloading unwinds them.
- *
- * The floating attention HUD (AttentionCard) targets the `shell.overlay`
- * frame-wide slot, which exists in dsh master but is not yet in the published
- * client runtime; it is registered here once that slot ships.
  */
 import type { ClientContext, ConversationViewDefinition } from '@deepseek-ai/dsh-client-runtime/client'
 // Type-only: pulls the ctx.locale Context merge.
