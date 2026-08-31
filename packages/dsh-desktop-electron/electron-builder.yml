@@ -3,7 +3,7 @@ productName: DSH Desktop
 asar: true
 artifactName: DSH-Desktop-${version}-${arch}.${ext}
 directories:
-  output: dist-electron
+  output: ../../dist-electron
   buildResources: assets/icons
 files:
   - dist/**
