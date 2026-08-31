@@ -1,0 +1,57 @@
+name: Release Desktop
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release-windows:
+    name: Build and publish Windows release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Verify tag matches desktop version
+        shell: pwsh
+        run: |
+          $desktop = Get-Content packages/dsh-desktop-electron/package.json -Raw | ConvertFrom-Json
+          if ("v$($desktop.version)" -ne "${{ github.ref_name }}") {
+            throw "Tag ${{ github.ref_name }} does not match desktop version $($desktop.version)"
+          }
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run release checks
+        run: pnpm check
+
+      - name: Build Windows installer and portable package
+        run: pnpm --dir packages/dsh-desktop-electron package:win
+
+      - name: Create GitHub Release and upload packages
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          make_latest: true
+          files: |
+            dist-electron/DSH-Desktop-*-Setup.exe
+            dist-electron/DSH-Desktop-*-Setup.exe.blockmap
+            dist-electron/DSH-Desktop-*-Portable.exe
+            dist-electron/latest.yml
