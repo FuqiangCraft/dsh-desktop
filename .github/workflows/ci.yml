@@ -53,6 +53,7 @@ jobs:
       - name: Check Rust/Tauri desktop shell
         if: runner.os == 'Windows'
         run: |
+          pnpm run tauri:prepare
           pnpm run tauri:typecheck
           pnpm run tauri:test
 
