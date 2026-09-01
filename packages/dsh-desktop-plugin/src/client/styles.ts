@@ -545,6 +545,9 @@ html.dsh-has-custom-skin .dsh_desktop_attentionCard {
   line-height: 18px;
   color: var(--dsw-alias-label-tertiary);
 }
+.dsh_desktop_updateError {
+  color: var(--dsw-alias-status-error, #c7352c);
+}
 .dsh_desktop_settingsSlider {
   width: 160px;
   accent-color: var(--dsw-alias-accent-primary);

@@ -38,6 +38,16 @@ test('pet previews are bundled instead of loaded from a cross-origin protocol', 
   assert.match(build, /loader:\s*\{\s*['"]\.png['"]:\s*['"]dataurl['"]\s*\}/, 'preview images must be self-contained in the plugin bundle')
 })
 
+test('update action always exposes progress and bridge failures to the user', async () => {
+  const source = await readFile(new URL('../src/client/settings/AppUpdateSettingsSection.tsx', import.meta.url), 'utf8')
+
+  assert.match(source, /phase: 'checking'/, 'clicking check must show immediate progress')
+  assert.match(source, /await bridge\.checkForUpdates\(\)/, 'update checks must wait for the native result')
+  assert.match(source, /catch \(error\)/, 'native bridge failures must be handled')
+  assert.match(source, /settings\.update\.failed/, 'failed checks must have a visible status')
+  assert.match(source, /settings\.update\.retry/, 'failed checks must offer a clear retry action')
+})
+
 test('updating settings updates state and notifies subscribers', () => {
   resetDesktopSettings()
   let notified = null

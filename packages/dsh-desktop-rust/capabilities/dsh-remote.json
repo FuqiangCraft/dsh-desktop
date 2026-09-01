@@ -1,0 +1,11 @@
+{
+  "$schema": "../gen/schemas/remote-schema.json",
+  "identifier": "dsh-remote",
+  "description": "Minimal native bridge for the loopback DSH client.",
+  "windows": ["dsh"],
+  "remote": {
+    "urls": ["http://127.0.0.1:*/*"]
+  },
+  "platforms": ["windows", "macOS", "linux"],
+  "permissions": ["desktop-bridge"]
+}

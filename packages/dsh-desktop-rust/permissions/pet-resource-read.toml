@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "pet-resource-read"
+description = "Allows the bundled pet window to read a validated custom PNG resource."
+commands.allow = ["read_pet_resource"]

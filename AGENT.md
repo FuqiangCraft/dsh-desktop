@@ -20,7 +20,7 @@
 通过对本地安装的官方 ChatGPT 桌面端（`OpenAI.Codex` / `ChatGPT.exe`）逆向与架构分析，总结以下桌面伴侣核心机制与设计参考：
 
 ### 1. 架构与资源组织
-- **宿主与辅进程分离**：核心 UI 基于轻量化 WebView/Electron 容器，底层搭配高性能辅助可执行程序（CLI runner, sandbox host, notification helpers）。
+- **宿主与辅进程分离**：核心 UI 基于 Rust/Tauri + WebView2，底层搭配独立 Node.js DSH sidecar 与辅助执行程序。
 - **音频与托盘资源**：内嵌专属系统通知音效（`codex-notification.wav`）及高对比度托盘图标（`dark/light` 动态适应），在任务完成或等待审批时通过声画双重反馈。
 
 ### 2. 桌面伴侣交互机制（Companion HUD）
@@ -41,7 +41,7 @@
 ## 三、DSH 宠物/桌面伴侣系统（Desktop Pet & Companion）设计规范
 
 ### 1. 系统架构定位
-- **宿主层（Electron 主进程）**：负责独立无边框透明悬浮窗（`pet-window`）、置顶（Always-on-top）、鼠标穿透与拖拽吸附、全局快捷键与原生系统通知/音效。
+- **宿主层（Rust/Tauri）**：负责独立无边框透明悬浮窗（`pet-window`）、置顶（Always-on-top）、鼠标穿透与拖拽吸附、原生菜单、托盘、通知与安全更新。
 - **扩展层（Cordis Plugin）**：
   - **Host 端**：提供配置 Schema、权限守卫与系统能力。
   - **Client 端**：监听 DSH 事件总线（`turn/start`, `step/start`, `tools/execute`, `question/requested`, `turn/end`），驱动伴侣动画与状态机，并注册原生设置插槽。

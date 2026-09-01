@@ -38,13 +38,54 @@ export const AppUpdateSettingsSection: React.FC<{ t: (key: DesktopKey) => string
       ? `${t('settings.update.downloading')} ${state.percent || 0}%`
       : state.phase === 'downloaded'
         ? t('settings.update.install')
-        : t('settings.update.check')
+        : state.phase === 'error'
+          ? t('settings.update.retry')
+          : t('settings.update.check')
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     const bridge = getUpdateBridge()
-    if (state.phase === 'downloaded') void bridge?.installUpdate?.()
-    else void bridge?.checkForUpdates?.().then(setState)
+    if (state.phase === 'downloaded') {
+      if (!bridge?.installUpdate) return
+      try {
+        await bridge.installUpdate()
+      } catch (error) {
+        setState({
+          ...state,
+          phase: 'error',
+          message: error instanceof Error ? error.message : String(error),
+        })
+      }
+      return
+    }
+
+    if (!bridge?.checkForUpdates) {
+      setState({ ...state, phase: 'error', message: t('settings.update.unavailable') })
+      return
+    }
+
+    setState({
+      ...state,
+      phase: 'checking',
+      availableVersion: undefined,
+      percent: undefined,
+      message: t('settings.update.checking'),
+    })
+    try {
+      setState(await bridge.checkForUpdates())
+    } catch (error) {
+      setState({
+        ...state,
+        phase: 'error',
+        availableVersion: undefined,
+        percent: undefined,
+        message: error instanceof Error ? error.message : String(error),
+      })
+    }
   }
+
+  const statusMessage = state.phase === 'error'
+    ? `${t('settings.update.failed')}：${state.message || t('settings.update.unavailable')}`
+    : state.message || t('settings.update.hint')
 
   return (
     <div className="dsh_desktop_settingsSection dsh_desktop_petSettings">
@@ -57,15 +98,15 @@ export const AppUpdateSettingsSection: React.FC<{ t: (key: DesktopKey) => string
       <div className="dsh_desktop_settingsCard dsh_desktop_petSizeRow">
         <div>
           <div className="dsh_desktop_settingsLabel">DeepSeek Harness {t('settings.update.desktop')}</div>
-          <div className="dsh_desktop_settingsDesc">
-            {t('settings.update.current')} {state.currentVersion} · {state.message || t('settings.update.hint')}
+          <div className={`dsh_desktop_settingsDesc${state.phase === 'error' ? ' dsh_desktop_updateError' : ''}`}>
+            {t('settings.update.current')} {state.currentVersion} · {statusMessage}
           </div>
         </div>
         <button
           className="dsh_desktop_petFolderButton"
           type="button"
           disabled={state.phase === 'checking' || state.phase === 'downloading' || state.phase === 'available'}
-          onClick={handleUpdate}
+          onClick={() => void handleUpdate()}
         >
           {buttonLabel}
         </button>

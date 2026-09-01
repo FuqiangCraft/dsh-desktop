@@ -21,11 +21,9 @@ overrides:
 
 onlyBuiltDependencies:
   - esbuild
-  # Required native/runtime installers for the Electron desktop build.
+  # Required native/runtime installers for the standalone DSH sidecar.
   - '@deepseek-ai/dsh-subprocess-local'
   - '@google/genai'
-  - electron
-  - electron-winstaller
   - koffi
   - node-pty
   - protobufjs
@@ -33,8 +31,6 @@ onlyBuiltDependencies:
 allowBuilds:
   '@deepseek-ai/dsh-subprocess-local': true
   '@google/genai': true
-  electron: true
-  electron-winstaller: true
   esbuild: true
   koffi: true
   node-pty: true

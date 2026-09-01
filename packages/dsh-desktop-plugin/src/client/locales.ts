@@ -37,7 +37,9 @@ export const zh = {
   'settings.update.current': '当前版本',
   'settings.update.hint': '可手动检查 GitHub Releases 新版本',
   'settings.update.check': '检查更新',
+  'settings.update.retry': '重新检查',
   'settings.update.checking': '正在检查…',
+  'settings.update.failed': '检查失败',
   'settings.update.downloading': '下载中',
   'settings.update.install': '立即重启安装',
   'settings.update.unavailable': '当前环境不支持桌面应用更新。',
@@ -98,6 +100,15 @@ export const zh = {
   'settings.about.upgradeCmd': '一键复制升级命令',
   'settings.about.copied': '已复制',
   'settings.about.desktopCheckUpdate': '检查桌面外壳更新...',
+
+  // Workspace
+  'workspace.title': '工作空间',
+  'workspace.open': '打开工作空间',
+  'workspace.chooseFolder': '选择工作空间文件夹',
+  'workspace.current': '当前工作空间',
+  'workspace.recent': '最近打开的工作空间',
+  'workspace.none': '未选择工作空间',
+  'workspace.switchNotice': '已切换到新工作空间',
 } satisfies Record<string, string>
 
 /** The `desktop` namespace key union. */
@@ -137,7 +148,9 @@ export const en: Record<DesktopKey, string> = {
   'settings.update.current': 'Current version',
   'settings.update.hint': 'Check GitHub Releases for a newer version',
   'settings.update.check': 'Check for updates',
+  'settings.update.retry': 'Check again',
   'settings.update.checking': 'Checking…',
+  'settings.update.failed': 'Update check failed',
   'settings.update.downloading': 'Downloading',
   'settings.update.install': 'Restart and install',
   'settings.update.unavailable': 'App updates are unavailable in this environment.',
@@ -198,4 +211,13 @@ export const en: Record<DesktopKey, string> = {
   'settings.about.upgradeCmd': 'Copy Upgrade Command',
   'settings.about.copied': 'Copied',
   'settings.about.desktopCheckUpdate': 'Check App Updates...',
+
+  // Workspace
+  'workspace.title': 'Workspace',
+  'workspace.open': 'Open Workspace',
+  'workspace.chooseFolder': 'Select Workspace Folder',
+  'workspace.current': 'Current Workspace',
+  'workspace.recent': 'Recent Workspaces',
+  'workspace.none': 'No workspace selected',
+  'workspace.switchNotice': 'Switched to new workspace',
 }

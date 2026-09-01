@@ -1,0 +1,26 @@
+[[permission]]
+identifier = "desktop-bridge"
+description = "Allows the trusted local DSH client to read and persist desktop settings and control its own window."
+commands.allow = [
+  "get_desktop_settings",
+  "save_desktop_settings",
+  "window_control",
+  "notify",
+  "sync_recent_sessions",
+  "update_pet_state",
+  "get_pet_resource_path",
+  "open_pet_resource_folder",
+  "list_pet_resources",
+  "read_pet_resource",
+  "get_update_state",
+  "check_for_updates",
+  "install_update",
+  "open_profile_dir",
+  "retry_boot",
+  "reset_profile",
+  "open_application_menu",
+  "select_workspace_folder",
+  "get_current_workspace",
+  "set_current_workspace",
+  "list_recent_workspaces",
+]
