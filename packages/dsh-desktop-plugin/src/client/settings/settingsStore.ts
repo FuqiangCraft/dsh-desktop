@@ -100,6 +100,19 @@ export function syncDesktopSettingsToHost(settings: DesktopSettings): void {
   }
 }
 
+/** Replace the renderer snapshot with the main-process source of truth. */
+export function applyDesktopSettingsFromHost(settings: DesktopSettings): void {
+  currentSettings = {
+    petEnabled: settings.petEnabled === true,
+    petCharacter: typeof settings.petCharacter === 'string' ? settings.petCharacter : DEFAULT_SETTINGS.petCharacter,
+    petSize: typeof settings.petSize === 'number' ? Math.max(60, Math.min(140, settings.petSize)) : DEFAULT_SETTINGS.petSize,
+  }
+  try {
+    window.localStorage?.setItem(STORAGE_KEY, JSON.stringify(currentSettings))
+  } catch {}
+  for (const listener of listeners) listener(currentSettings)
+}
+
 /** Reset settings to defaults. */
 export function resetDesktopSettings(): DesktopSettings {
   return updateDesktopSettings(DEFAULT_SETTINGS)

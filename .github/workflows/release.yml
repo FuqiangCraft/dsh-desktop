@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   release-windows:
-    name: Build and publish Windows release
+    name: Build and publish signed Tauri release
     runs-on: windows-latest
 
     steps:
@@ -31,27 +31,35 @@ jobs:
       - name: Verify tag matches desktop version
         shell: pwsh
         run: |
-          $desktop = Get-Content packages/dsh-desktop-electron/package.json -Raw | ConvertFrom-Json
+          $desktop = Get-Content packages/dsh-desktop-rust/tauri.conf.json -Raw | ConvertFrom-Json
           if ("v$($desktop.version)" -ne "${{ github.ref_name }}") {
-            throw "Tag ${{ github.ref_name }} does not match desktop version $($desktop.version)"
+            throw "Tag ${{ github.ref_name }} does not match Tauri desktop version $($desktop.version)"
           }
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build artifacts
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: '. -> target'
+
       - name: Run release checks
         run: pnpm check
 
-      - name: Build Windows installer and portable package
-        run: pnpm --dir packages/dsh-desktop-electron package:win
-
-      - name: Create GitHub Release and upload packages
-        uses: softprops/action-gh-release@v2
+      - name: Build, sign and publish Tauri update
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
         with:
-          generate_release_notes: true
-          make_latest: true
-          files: |
-            dist-electron/DSH-Desktop-*-Setup.exe
-            dist-electron/DSH-Desktop-*-Setup.exe.blockmap
-            dist-electron/DSH-Desktop-*-Portable.exe
-            dist-electron/latest.yml
+          tagName: ${{ github.ref_name }}
+          releaseName: 'DeepSeek Harness 桌面版 v__VERSION__'
+          releaseBody: '请从 Assets 下载 Windows 安装包。已安装版本可通过应用内更新自动升级。'
+          releaseDraft: false
+          prerelease: false
+          args: --config packages/dsh-desktop-rust/tauri.conf.json --features tauri-shell

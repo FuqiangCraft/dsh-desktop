@@ -5,7 +5,7 @@
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）的 Electron 桌面外壳与 Cordis 插件。插件提供等待交互的桌面通知、可选开启的 `screen_capture` 模型工具、多智能体画布、桌面宠物伴侣窗口和桌面设置分区；外壳在主进程内启动 dsh host，并以原生窗口嵌入其 Web UI、提供托盘控制。
+面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）的 Rust/Tauri 桌面外壳与 Cordis 插件。Rust 负责原生生命周期、窗口、托盘、通知和签名更新，受监管的 Node.js sidecar 负责兼容 DSH/Cordis 运行时。
 
 [English](README.md) | 中文
 
@@ -18,7 +18,7 @@
 | 多智能体画布 | client | `conversation.view` 标签页，从会话存储渲染会话与子智能体的实时只读状态网格。 |
 | 桌面宠物 | client | 悬浮伴侣窗口（猫 / 机器人 / 鲸鱼），由状态引擎根据会话实时状态推导宠物形态（待机 / 思考 / 工作中 / 警示 / 成功），并在 dsh 导航栏拥有专属图标。 |
 | 桌面设置 | client | 设置分区：宠物偏好（启用/关闭、角色（内置机器人 / 鲸鱼 / 猫或自定义 PNG）、大小）。 |
-| 原生外壳 | app | Electron 35 应用：在主进程内启动 dsh host、以无边框窗口嵌入本地 Web UI、固定应用内目录浏览，并提供带最近会话菜单和更新检查的托盘控制。 |
+| 原生外壳 | app | Rust/Tauri 应用：监管 DSH sidecar、以无边框 WebView2 窗口嵌入本地 Web UI，并提供原生工作空间、托盘、伴侣窗口和 GitHub Releases 签名更新。 |
 
 ## 挂载方式
 
@@ -59,8 +59,8 @@ dsh web --patch ./packages/dsh-desktop-plugin/cordis.patch.yml
 
 ```sh
 pnpm install
-pnpm dev            # Electron 开发
-pnpm electron:package # Windows 生产构建
+pnpm dev             # Rust/Tauri 开发桌面端
+pnpm tauri:package   # Windows 生产构建（发布时需要签名环境变量）
 ```
 
 需要 Node.js ≥ 22 和 pnpm 11（`corepack enable`）。
@@ -81,7 +81,7 @@ pnpm electron:package # Windows 生产构建
 
 ```sh
 pnpm install
-pnpm check          # lint + 类型检查 + 测试 + Electron 构建 + 插件构建 + bundle 校验
+pnpm check          # lint + 类型检查 + Node/Rust 测试 + 插件构建 + 运行时校验
 pnpm dev:plugin     # 插件开发循环
 ```
 
@@ -89,14 +89,15 @@ pnpm dev:plugin     # 插件开发循环
 
 ```
 packages/dsh-desktop-plugin/   # 双面 Cordis 插件（dsh.bundle + dsh.client）
-packages/dsh-desktop-electron/ # Electron 桌面应用
+packages/dsh-desktop-rust/     # Rust/Tauri 原生桌面外壳
+packages/dsh-desktop-sidecar/  # 受监管的 Node.js DSH/Cordis 运行时
 stubs/                         # 尚未发布的 @deepseek-ai/* 传递依赖的本地类型桩
 docs/                          # ARCHITECTURE_ANALYSIS + PUBLISHING_GUIDE（2026-08 验证）
 ```
 
 ## 文档与社区
 
-- [架构分析](docs/ARCHITECTURE_ANALYSIS.md)——dsh 内部机制调研与已验证约束
+- [Rust 架构](docs/RUST_ARCHITECTURE.md)——原生边界、sidecar 协议与发布设计
 - [发布指南](docs/PUBLISHING_GUIDE.md)——打包规范、注册表提交、npm 已知坑
 - [贡献指南](CONTRIBUTING.md) · [安全策略](SECURITY.md) · [更新日志](CHANGELOG.md)
 

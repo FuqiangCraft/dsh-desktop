@@ -6,18 +6,22 @@
   "type": "module",
   "scripts": {
     "build": "pnpm -r run build",
-    "dev:electron": "pnpm --filter @dsh-community/dsh-desktop-electron dev",
     "dev:plugin": "pnpm --filter @mixian/dsh-desktop-plugin dev",
-    "dev": "pnpm --dir packages/dsh-desktop-electron exec electron .",
-    "electron:typecheck": "pnpm --dir packages/dsh-desktop-electron typecheck",
-    "electron:test": "pnpm --dir packages/dsh-desktop-electron test",
-    "electron:build": "pnpm --dir packages/dsh-desktop-electron build",
-    "electron:package": "pnpm --dir packages/dsh-desktop-electron package:dir",
+    "dev": "node packages/dsh-desktop-rust/scripts/dev.mjs",
+    "tauri:dev": "node packages/dsh-desktop-rust/scripts/dev.mjs",
+    "tauri:typecheck": "cargo check -p dsh-desktop-host --features tauri-shell",
+    "tauri:test": "cargo test -p dsh-desktop-host --features tauri-shell",
+    "tauri:prepare": "node packages/dsh-desktop-rust/scripts/prepare-runtime.mjs",
+    "tauri:package": "pnpm exec tauri build --config packages/dsh-desktop-rust/tauri.conf.json",
+    "benchmark:desktop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/benchmark-desktop-runtime.ps1",
+    "benchmark:desktop:release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/benchmark-desktop-runtime.ps1 -Mode production",
     "lint": "oxlint --ignore-pattern '**/lib/**' --ignore-pattern '**/target/**' .",
     "typecheck": "pnpm -r --if-present run typecheck",
-    "test": "node --test test/license.test.mjs test/metadata.test.mjs packages/dsh-desktop-plugin/test/locales.test.mjs packages/dsh-desktop-plugin/test/config.test.mjs packages/dsh-desktop-plugin/test/screen-capture.test.mjs packages/dsh-desktop-plugin/test/notifier.test.mjs packages/dsh-desktop-plugin/test/settings.test.mjs packages/dsh-desktop-plugin/test/pet-state.test.mjs",
+    "test": "node --test test/license.test.mjs test/metadata.test.mjs packages/dsh-desktop-plugin/test/locales.test.mjs packages/dsh-desktop-plugin/test/config.test.mjs packages/dsh-desktop-plugin/test/screen-capture.test.mjs packages/dsh-desktop-plugin/test/notifier.test.mjs packages/dsh-desktop-plugin/test/settings.test.mjs packages/dsh-desktop-plugin/test/pet-state.test.mjs packages/dsh-desktop-plugin/test/workspace-picker.test.mjs",
     "verify:bundle": "node scripts/verify-bundle.mjs",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm electron:typecheck && pnpm electron:test && pnpm electron:build && pnpm --filter @mixian/dsh-desktop-plugin build && pnpm verify:bundle"
+    "verify:runtime-closure": "node scripts/verify-runtime-closure.mjs",
+    "verify:package-size": "node scripts/verify-package-size.mjs",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm tauri:typecheck && pnpm tauri:test && pnpm --filter @mixian/dsh-desktop-plugin build && pnpm verify:bundle && pnpm verify:runtime-closure && pnpm verify:package-size"
   },
   "keywords": [
     "deepseek",
@@ -40,6 +44,7 @@
     "url": "https://github.com/FuqiangCraft/dsh-desktop/issues"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "2.11.4",
     "oxlint": "^1.14.0",
     "typescript": "^5.8.2"
   },

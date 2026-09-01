@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DSH Desktop 启动恢复</title>
+  <style>
+    :root { color-scheme: light dark; font-family: Inter, "Segoe UI", system-ui, sans-serif; background: #eef2f7; color: #172033; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 28px; background: radial-gradient(circle at top, #fff 0, #eef2f7 58%, #e2e8f0 100%); }
+    main { width: min(720px, 100%); border: 1px solid #d7dee8; border-radius: 18px; background: rgba(255,255,255,.94); padding: 30px; box-shadow: 0 22px 70px rgba(36, 52, 74, .16); }
+    .mark { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 14px; background: #fff1f0; color: #c9382b; font-size: 25px; font-weight: 700; }
+    h1 { margin: 18px 0 8px; font-size: 24px; }
+    p { margin: 0; color: #59677a; line-height: 1.6; }
+    pre { margin: 22px 0; max-height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; border-radius: 10px; background: #111827; color: #dbeafe; padding: 15px; font: 12px/1.55 Consolas, monospace; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    button { border: 1px solid #cbd5e1; border-radius: 9px; background: #fff; color: #243044; padding: 10px 15px; cursor: pointer; font: inherit; }
+    button.primary { border-color: #2563eb; background: #2563eb; color: #fff; }
+    button.danger { color: #b42318; }
+    button:disabled { opacity: .55; cursor: wait; }
+    #status { min-height: 24px; margin-top: 16px; font-size: 13px; color: #59677a; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="mark">!</div>
+    <h1>DeepSeek Harness 启动失败</h1>
+    <p>本地运行时没有成功启动。你可以检查配置目录、恢复桌面默认配置，或直接重试。</p>
+    <pre id="detail"></pre>
+    <div class="actions">
+      <button class="primary" data-action="retry">重试启动</button>
+      <button data-action="open">打开配置目录</button>
+      <button class="danger" data-action="reset">恢复默认配置</button>
+      <button data-action="quit">退出</button>
+    </div>
+    <div id="status" role="status" aria-live="polite"></div>
+  </main>
+  <script>
+    const bridge = window.__DSH_DESKTOP_BRIDGE__
+    const status = document.querySelector('#status')
+    document.querySelector('#detail').textContent = window.__DSH_BOOT_ERROR__ || '未知启动错误'
+    const run = async (button, message, action) => {
+      status.textContent = message
+      document.querySelectorAll('button').forEach((item) => { item.disabled = true })
+      try { await action() }
+      catch (error) {
+        status.textContent = error instanceof Error ? error.message : String(error)
+        document.querySelectorAll('button').forEach((item) => { item.disabled = false })
+      }
+    }
+    document.querySelector('[data-action="retry"]').addEventListener('click', (event) => run(event.currentTarget, '正在重新启动…', () => bridge.retryBoot()))
+    document.querySelector('[data-action="open"]').addEventListener('click', () => bridge.openProfileDir())
+    document.querySelector('[data-action="reset"]').addEventListener('click', (event) => run(event.currentTarget, '正在恢复默认配置并重新启动…', () => bridge.resetProfile()))
+    document.querySelector('[data-action="quit"]').addEventListener('click', () => bridge.windowControl('quit'))
+  </script>
+</body>
+</html>

@@ -17,6 +17,7 @@ import { promisify } from 'node:util'
 import { readFile, unlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import { AttachmentId } from '@deepseek-ai/dsh-attachment'
 import type { ImageAttachmentRef } from '@deepseek-ai/dsh-attachment'
@@ -69,7 +70,7 @@ export function captureCommand(
 
 /** Capture the host's primary display to a temporary PNG file and return its bytes. */
 export async function captureScreenPng(): Promise<Buffer> {
-  const tempPath = join(tmpdir(), `dsh-screen-capture-${process.pid}.png`)
+  const tempPath = join(tmpdir(), `dsh-screen-capture-${process.pid}-${randomUUID()}.png`)
   try {
     const { command, args } = captureCommand(tempPath)
     try {
@@ -112,6 +113,9 @@ export async function captureScreenPng(): Promise<Buffer> {
     })
     if (data.length === 0) {
       throw new Error('screen_capture: captured screenshot file is empty (0 bytes)')
+    }
+    if (data.length > 50 * 1024 * 1024) {
+      throw new Error('screen_capture: captured screenshot exceeds the 50 MiB safety limit')
     }
     return data
   } finally {

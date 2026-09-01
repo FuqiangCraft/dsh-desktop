@@ -5,7 +5,7 @@
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-An Electron desktop shell and a Cordis plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`). The plugin adds desktop notifications for pending interactions, an opt-in `screen_capture` model tool, a multi-agent tiling canvas, a desk-pet companion window, and a desktop settings section. The shell boots the dsh host in-process and embeds its web UI in a native window with tray controls.
+A Rust/Tauri desktop shell and Cordis plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`). Rust owns the native lifecycle, windows, tray, notifications and signed updates; a supervised Node.js sidecar runs the compatible DSH/Cordis runtime.
 
 [English](README.md) | [中文](README.zh.md)
 
@@ -18,7 +18,7 @@ An Electron desktop shell and a Cordis plugin for [DeepSeek Harness](https://git
 | Multi-agent tiling canvas | client | A `conversation.view` tab rendering a live, read-only grid of sessions and sub-agents from the sessions store. |
 | Desk pet | client | A floating companion window (cat / robot / whale) driven by a state engine that derives pet state (idle / thinking / working / alert / success) from live sessions. Ships a custom navigation icon in the dsh nav bar. |
 | Desktop settings | client | A settings section for pet preferences: enable/disable, character (built-in robot / whale / cat or a custom PNG), and size. |
-| Native shell | app | Electron 35 app that boots the dsh host in-process, embeds the local Web UI in a frameless window, pins in-app directory browsing, and provides tray controls with a recent-sessions menu and update checks. |
+| Native shell | app | Rust/Tauri app that supervises the DSH sidecar, embeds the local Web UI in a frameless WebView2 window, and provides native workspaces, tray controls, companion windows and signed GitHub Releases updates. |
 
 ## How it plugs in
 
@@ -59,8 +59,8 @@ The captured image is always surfaced back into the conversation for transparenc
 
 ```sh
 pnpm install
-pnpm dev            # Electron dev
-pnpm electron:package # Windows production bundle
+pnpm dev             # Rust/Tauri development app
+pnpm tauri:package   # Signed Windows production bundle (signing env required)
 ```
 
 Requires Node.js ≥ 22 and pnpm 11 (`corepack enable`).
@@ -81,7 +81,7 @@ Requires Node.js ≥ 22 and pnpm 11 (`corepack enable`).
 
 ```sh
 pnpm install
-pnpm check          # lint + typecheck + tests + Electron build + plugin build + bundle verification
+pnpm check          # lint + typecheck + Node/Rust tests + plugin build + runtime verification
 pnpm dev:plugin     # plugin dev loop
 ```
 
@@ -89,14 +89,15 @@ pnpm dev:plugin     # plugin dev loop
 
 ```
 packages/dsh-desktop-plugin/   # dual-face Cordis plugin (dsh.bundle + dsh.client)
-packages/dsh-desktop-electron/ # Electron desktop application
+packages/dsh-desktop-rust/     # Rust/Tauri native desktop shell
+packages/dsh-desktop-sidecar/  # supervised Node.js DSH/Cordis runtime
 stubs/                         # local type-stubs for unpublished @deepseek-ai/* transitive deps
 docs/                          # ARCHITECTURE_ANALYSIS + PUBLISHING_GUIDE (verified 2026-08)
 ```
 
 ## Documentation & community
 
-- [Architecture analysis](docs/ARCHITECTURE_ANALYSIS.md) — dsh internals research and verified constraints
+- [Rust architecture](docs/RUST_ARCHITECTURE.md) — native boundary, sidecar protocol and release design
 - [Publishing guide](docs/PUBLISHING_GUIDE.md) — packaging rules, registry submission, npm pitfalls
 - [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md) · [Changelog](CHANGELOG.md)
 

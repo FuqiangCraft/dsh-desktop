@@ -7,14 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5] - 2026-09-01
+
+### Added
+- Rust/Tauri native desktop shell with a supervised Node.js DSH sidecar.
+- Native menus, tray, notifications, workspaces, companion window and recovery UI.
+- Signed GitHub Releases updater with a public verification key and protected CI signing key.
+
+### Changed
+- Rust/Tauri is now the only desktop build, development and release target.
+- Workspace selection uses the native Windows folder picker and immediately enters the selected workspace.
+
+### Removed
+- The retired Electron shell, packaging scripts, dependencies and compatibility tests.
+
 ### Removed
 - Startup full-window loading spinner; the web UI now appears directly once the embedded host is ready.
 - Host HTTP readiness polling before first window load (the cordis boot promise already guarantees the web server is listening).
 - Dead IPC surface: preload `startDraggingPet` / `openSession` / `newChat` bridges with no main-process handlers, and the never-mounted `AttentionCard` component (`shell.overlay` slot remains unpublished).
 
 ### Changed
-- Plugin ↔ shell IPC consolidated onto the single `__DSH_DESKTOP_BRIDGE__` channel: pet state engine, tray recent-sessions sync, desktop settings sync, and pet resource queries no longer fall back to the legacy second IPC channel. This also restores pet-state and recent-session sync on Electron, which previously had no sender.
-- Docs aligned with the Electron shell (README, README.zh, AGENT.md, ARCHITECTURE_ANALYSIS).
+- Plugin ↔ shell IPC consolidated onto the single `__DSH_DESKTOP_BRIDGE__` channel.
+- Documentation aligned with the Rust/Tauri shell and sidecar architecture.
 
 ## [0.1.2] - 2026-08-30
 

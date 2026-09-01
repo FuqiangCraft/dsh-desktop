@@ -35,10 +35,11 @@ export const DesktopSettingsSection: React.FC<DesktopSettingsSectionProps> = ({ 
     let cancelled = false
     void Promise.resolve(bridge()?.listPetResources?.()).then(async (names) => {
       if (!Array.isArray(names) || cancelled) return
-      const pets = await Promise.all((names as string[]).map(async (name) => ({
-        name,
-        preview: (await Promise.resolve(bridge()?.readPetResource?.(name))) as string,
-      })))
+      const pets: Array<{ name: string; preview: string }> = []
+      for (const name of (names as string[]).slice(0, 20)) {
+        const preview = await Promise.resolve(bridge()?.readPetResource?.(name))
+        if (typeof preview === 'string') pets.push({ name, preview })
+      }
       if (!cancelled) setCustomPets(pets)
     })
     return () => { cancelled = true }
