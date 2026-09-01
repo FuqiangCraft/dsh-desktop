@@ -21,7 +21,7 @@
     "verify:bundle": "node scripts/verify-bundle.mjs",
     "verify:runtime-closure": "node scripts/verify-runtime-closure.mjs",
     "verify:package-size": "node scripts/verify-package-size.mjs",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm tauri:typecheck && pnpm tauri:test && pnpm --filter @mixian/dsh-desktop-plugin build && pnpm verify:bundle && pnpm verify:runtime-closure && pnpm verify:package-size"
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm tauri:prepare && pnpm tauri:typecheck && pnpm tauri:test && pnpm --filter @mixian/dsh-desktop-plugin build && pnpm verify:bundle && pnpm verify:runtime-closure && pnpm verify:package-size"
   },
   "keywords": [
     "deepseek",
