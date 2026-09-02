@@ -17,7 +17,7 @@
     "benchmark:desktop:release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/benchmark-desktop-runtime.ps1 -Mode production",
     "lint": "oxlint --ignore-pattern '**/lib/**' --ignore-pattern '**/target/**' .",
     "typecheck": "pnpm -r --if-present run typecheck",
-    "test": "node --test test/license.test.mjs test/metadata.test.mjs packages/dsh-desktop-plugin/test/locales.test.mjs packages/dsh-desktop-plugin/test/config.test.mjs packages/dsh-desktop-plugin/test/screen-capture.test.mjs packages/dsh-desktop-plugin/test/notifier.test.mjs packages/dsh-desktop-plugin/test/settings.test.mjs packages/dsh-desktop-plugin/test/pet-state.test.mjs packages/dsh-desktop-plugin/test/workspace-picker.test.mjs",
+    "test": "node --test test/license.test.mjs test/metadata.test.mjs test/installer.test.mjs packages/dsh-desktop-plugin/test/locales.test.mjs packages/dsh-desktop-plugin/test/config.test.mjs packages/dsh-desktop-plugin/test/screen-capture.test.mjs packages/dsh-desktop-plugin/test/notifier.test.mjs packages/dsh-desktop-plugin/test/settings.test.mjs packages/dsh-desktop-plugin/test/pet-state.test.mjs packages/dsh-desktop-plugin/test/workspace-picker.test.mjs",
     "verify:bundle": "node scripts/verify-bundle.mjs",
     "verify:runtime-closure": "node scripts/verify-runtime-closure.mjs",
     "verify:package-size": "node scripts/verify-package-size.mjs",
