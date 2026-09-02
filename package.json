@@ -1,6 +1,6 @@
 {
   "name": "deepseek-harness-desktop-pro",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "private": true,
   "description": "The Ultimate Next-Generation Desktop Plugin & Native Client for DeepSeek Harness",
   "type": "module",
