@@ -3,6 +3,7 @@ import test from 'node:test'
 import {
   adoptNativeWorkspace,
   findWorkspacePickerTarget,
+  installNativeWorkspacePickerInterceptor,
   isWorkspacePickerDescriptor,
 } from '../src/client/workspacePicker.ts'
 
@@ -58,6 +59,54 @@ test('finds the add-workspace menu item when the click lands on its icon', () =>
 
   try {
     assert.equal(findWorkspacePickerTarget(icon), menuItem)
+  } finally {
+    if (OriginalElement === undefined) delete globalThis.Element
+    else globalThis.Element = OriginalElement
+  }
+})
+
+test('installs the native picker above document-level workspace handlers', () => {
+  const OriginalElement = globalThis.Element
+  class FakeElement {}
+  globalThis.Element = FakeElement
+
+  const button = new FakeElement()
+  button.getAttribute = (name) => name === 'aria-label' ? '添加工作区' : null
+  button.textContent = ''
+  button.className = ''
+  button.closest = (selector) => selector === '#dsh-shell-titlebar' ? null : button
+
+  const icon = new FakeElement()
+  icon.closest = () => button
+  const listeners = new Map()
+  const root = {
+    addEventListener(type, listener, capture) {
+      listeners.set(type, { listener, capture })
+    },
+    removeEventListener(type) {
+      listeners.delete(type)
+    },
+  }
+  let opened = 0
+  const cleanup = installNativeWorkspacePickerInterceptor(root, async () => {
+    opened += 1
+    return 'D:\\projects\\demo'
+  })
+  const event = {
+    target: icon,
+    detail: 1,
+    preventDefault() {},
+    stopPropagation() {},
+    stopImmediatePropagation() {},
+  }
+
+  try {
+    assert.equal(listeners.get('pointerdown')?.capture, true)
+    assert.equal(listeners.get('click')?.capture, true)
+    listeners.get('pointerdown').listener(event)
+    assert.equal(opened, 1)
+    cleanup()
+    assert.equal(listeners.size, 0)
   } finally {
     if (OriginalElement === undefined) delete globalThis.Element
     else globalThis.Element = OriginalElement
