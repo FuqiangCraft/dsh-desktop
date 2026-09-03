@@ -12,9 +12,16 @@ test('settings store has expected default values', () => {
   resetDesktopSettings()
   const settings = getDesktopSettings()
 
-  assert.equal(settings.petEnabled, false)
+  assert.equal(settings.petEnabled, true)
   assert.equal(settings.petCharacter, 'robot')
   assert.equal(settings.petSize, 100)
+  assert.equal(settings.petAlwaysOnTop, true)
+  assert.equal(settings.petOpacity, 100)
+  assert.equal(settings.petClickThrough, false)
+  assert.equal(settings.globalShortcutEnabled, true)
+  assert.equal(settings.soundEnabled, true)
+  assert.equal(settings.soundVolume, 80)
+  assert.equal(settings.screenCaptureEnabled, false)
 })
 
 test('settings UI offers desktop companion characters without skin controls', async () => {
@@ -26,6 +33,9 @@ test('settings UI offers desktop companion characters without skin controls', as
   assert.match(source, /dsh_desktop_petThumbnail/)
   assert.match(source, /getPetResourcePath/)
   assert.match(source, /openPetResourceFolder/)
+  assert.match(source, /宠物大小/)
+  assert.doesNotMatch(source, /settings\.globalShortcut\.label/)
+  assert.doesNotMatch(source, /settings\.screenCapture\.label/)
 
   assert.doesNotMatch(source, /PRESET_SKINS|skinTheme|get_skin_resource_path|save_skin_resource/)
 })
@@ -46,6 +56,7 @@ test('update action always exposes progress and bridge failures to the user', as
   assert.match(source, /catch \(error\)/, 'native bridge failures must be handled')
   assert.match(source, /settings\.update\.failed/, 'failed checks must have a visible status')
   assert.match(source, /settings\.update\.retry/, 'failed checks must offer a clear retry action')
+  assert.match(source, /phase:\s*['"]idle['"],\s*currentVersion:\s*['"]['"],\s*message:\s*undefined/, 'idle fallback must not show unavailable message before bridge reports')
 })
 
 test('updating settings updates state and notifies subscribers', () => {

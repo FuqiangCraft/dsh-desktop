@@ -72,6 +72,7 @@ const required = [
   '@deepseek-ai/cordis', '@deepseek-ai/dsh-app-boot', '@deepseek-ai/dsh-web-app',
   '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-home-paths', '@deepseek-ai/dsh-launch-environment',
   '@deepseek-ai/dsh-cmdline', '@mixian/dsh-desktop-plugin',
+  '@deepseek-ai/dsh-client-ui-directory-picker-native', '@deepseek-ai/dsh-host-directory-picker-native',
 ]
 const missingRequired = required.filter((name) => !names.has(name))
 const versionSets = new Map()

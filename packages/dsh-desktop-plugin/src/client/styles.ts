@@ -9,7 +9,8 @@ export const STYLE_ID = 'dsh-desktop-style'
 
 /** The plugin's injected stylesheet text. */
 export const cssText = `
-.dsh_desktop_petNavIcon > svg {
+.dsh_desktop_petNavIcon > svg,
+.dsh_desktop_updateNavIcon > svg {
   display: none;
 }
 .dsh_desktop_petNavIcon::before {
@@ -19,6 +20,14 @@ export const cssText = `
   height: 16px;
   background: currentColor;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 22c-2.9 0-6.8-1.7-6.8-5.1 0-2.1 1.7-3.5 3.2-4.7 1.2-1 2.3-1.8 3.6-1.8s2.4.8 3.6 1.8c1.5 1.2 3.2 2.6 3.2 4.7C18.8 20.3 14.9 22 12 22ZM5.1 12.6c-1.7.3-3.4-1.2-3.8-3.3S2 5.2 3.7 4.9s3.4 1.2 3.8 3.3-.7 4.1-2.4 4.4Zm13.8 0c-1.7-.3-2.8-2.3-2.4-4.4s2.1-3.6 3.8-3.3 2.8 2.3 2.4 4.4-2.1 3.6-3.8 3.3ZM9.2 8.4C7.4 8.4 6 6.5 6 4.2S7.4 0 9.2 0s3.2 1.9 3.2 4.2-1.4 4.2-3.2 4.2Zm5.6 0c-1.8 0-3.2-1.9-3.2-4.2S13 0 14.8 0 18 1.9 18 4.2s-1.4 4.2-3.2 4.2Z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.dsh_desktop_updateNavIcon::before {
+  content: '';
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8Zm1-13h-2v5H7l5 5 5-5h-4Z'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 .dsh_desktop_attentionStack {
   position: fixed;
@@ -445,6 +454,10 @@ html.dsh-has-custom-skin .dsh_desktop_attentionCard {
 .dsh_desktop_petToolbarButton:hover,
 .dsh_desktop_petFolderButton:hover {
   background: var(--dsw-alias-bg-layer-3);
+}
+.dsh_desktop_petToolbarButton.is-active {
+  background: var(--dsw-alias-accent-primary, #0ea5e9);
+  color: #ffffff;
 }
 .dsh_desktop_petCatalog { padding: 0 16px; }
 .dsh_desktop_petRow {

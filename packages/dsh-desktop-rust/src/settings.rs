@@ -14,18 +14,49 @@ pub struct DesktopSettings {
     pub pet_enabled: bool,
     pub pet_character: String,
     pub pet_size: u16,
+    #[serde(default = "default_true")]
+    pub pet_always_on_top: bool,
+    #[serde(default = "default_opacity")]
+    pub pet_opacity: u8,
+    #[serde(default)]
+    pub pet_click_through: bool,
+    #[serde(default = "default_true")]
+    pub global_shortcut_enabled: bool,
+    #[serde(default = "default_true")]
+    pub sound_enabled: bool,
+    #[serde(default = "default_volume")]
+    pub sound_volume: u8,
+    #[serde(default)]
+    pub screen_capture_enabled: bool,
     #[serde(default)]
     pub last_workspace: Option<String>,
     #[serde(default)]
     pub recent_workspaces: Vec<String>,
 }
 
+fn default_true() -> bool {
+    true
+}
+fn default_opacity() -> u8 {
+    100
+}
+fn default_volume() -> u8 {
+    80
+}
+
 impl Default for DesktopSettings {
     fn default() -> Self {
         Self {
-            pet_enabled: false,
+            pet_enabled: true,
             pet_character: "robot".to_owned(),
             pet_size: 100,
+            pet_always_on_top: true,
+            pet_opacity: 100,
+            pet_click_through: false,
+            global_shortcut_enabled: true,
+            sound_enabled: true,
+            sound_volume: 80,
+            screen_capture_enabled: false,
             last_workspace: None,
             recent_workspaces: Vec::new(),
         }
@@ -38,6 +69,13 @@ pub struct DesktopSettingsPatch {
     pub pet_enabled: Option<bool>,
     pub pet_character: Option<String>,
     pub pet_size: Option<u16>,
+    pub pet_always_on_top: Option<bool>,
+    pub pet_opacity: Option<u8>,
+    pub pet_click_through: Option<bool>,
+    pub global_shortcut_enabled: Option<bool>,
+    pub sound_enabled: Option<bool>,
+    pub sound_volume: Option<u8>,
+    pub screen_capture_enabled: Option<bool>,
     pub last_workspace: Option<Option<String>>,
     pub recent_workspaces: Option<Vec<String>>,
 }
@@ -178,6 +216,13 @@ impl DesktopSettingsStore {
             pet_enabled: patch.pet_enabled.unwrap_or(current.pet_enabled),
             pet_character: patch.pet_character.unwrap_or(current.pet_character),
             pet_size: patch.pet_size.unwrap_or(current.pet_size),
+            pet_always_on_top: patch.pet_always_on_top.unwrap_or(current.pet_always_on_top),
+            pet_opacity: patch.pet_opacity.unwrap_or(current.pet_opacity),
+            pet_click_through: patch.pet_click_through.unwrap_or(current.pet_click_through),
+            global_shortcut_enabled: patch.global_shortcut_enabled.unwrap_or(current.global_shortcut_enabled),
+            sound_enabled: patch.sound_enabled.unwrap_or(current.sound_enabled),
+            sound_volume: patch.sound_volume.unwrap_or(current.sound_volume),
+            screen_capture_enabled: patch.screen_capture_enabled.unwrap_or(current.screen_capture_enabled),
             last_workspace,
             recent_workspaces,
         });
@@ -200,11 +245,9 @@ impl DesktopSettingsStore {
         }
         recent.truncate(10);
         self.save(DesktopSettingsPatch {
-            pet_enabled: None,
-            pet_character: None,
-            pet_size: None,
             last_workspace: Some(Some(trimmed.to_owned())),
             recent_workspaces: Some(recent),
+            ..Default::default()
         })
     }
 
@@ -225,6 +268,8 @@ impl DesktopSettingsStore {
 
 fn sanitize(mut settings: DesktopSettings) -> DesktopSettings {
     settings.pet_size = settings.pet_size.clamp(60, 140);
+    settings.pet_opacity = settings.pet_opacity.clamp(50, 100);
+    settings.sound_volume = settings.sound_volume.min(100);
     if settings.pet_character.len() > 100 || settings.pet_character.is_empty() {
         settings.pet_character = DesktopSettings::default().pet_character;
     }
@@ -288,10 +333,10 @@ mod tests {
     }
 
     #[test]
-    fn desktop_pet_is_disabled_by_default() {
-        assert!(!DesktopSettings::default().pet_enabled);
+    fn desktop_pet_is_enabled_by_default() {
+        assert!(DesktopSettings::default().pet_enabled);
         assert!(
-            !DesktopSettingsStore::new(test_root("default"))
+            DesktopSettingsStore::new(test_root("default"))
                 .get()
                 .pet_enabled
         );
@@ -306,11 +351,14 @@ mod tests {
                 pet_enabled: Some(true),
                 pet_character: Some("cat".to_owned()),
                 pet_size: Some(500),
-                last_workspace: None,
-                recent_workspaces: None,
+                pet_opacity: Some(20),
+                sound_volume: Some(250),
+                ..Default::default()
             })
             .unwrap();
         assert_eq!(saved.pet_size, 140);
+        assert_eq!(saved.pet_opacity, 50);
+        assert_eq!(saved.sound_volume, 100);
         assert_eq!(DesktopSettingsStore::new(&root).get(), saved);
         let _ = fs::remove_dir_all(root);
     }

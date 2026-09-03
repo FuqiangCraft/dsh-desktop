@@ -10,7 +10,7 @@ build = "build.rs"
 
 [features]
 default = []
-tauri-shell = ["dep:sys-locale", "dep:tauri", "dep:tauri-build", "dep:tauri-plugin-notification", "dep:tauri-plugin-opener", "dep:tauri-plugin-single-instance", "dep:tauri-plugin-updater"]
+tauri-shell = ["dep:sys-locale", "dep:tauri", "dep:tauri-build", "dep:tauri-plugin-notification", "dep:tauri-plugin-opener", "dep:tauri-plugin-single-instance", "dep:tauri-plugin-updater", "dep:tauri-plugin-global-shortcut"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -19,6 +19,7 @@ thiserror = "2"
 sys-locale = { version = "0.3.2", optional = true }
 tauri = { version = "2", optional = true, features = ["tray-icon"] }
 dirs = "6"
+tauri-plugin-global-shortcut = { version = "2", optional = true }
 tauri-plugin-notification = { version = "2", optional = true }
 tauri-plugin-opener = { version = "2", optional = true }
 tauri-plugin-single-instance = { version = "2.4.3", optional = true }

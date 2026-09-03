@@ -7,14 +7,35 @@ export interface DesktopSettings {
   petEnabled: boolean
   /** Selected character: one of 'robot' | 'whale' | 'cat', or 'custom:<name>' for a PNG in ~/.dsh/pets. */
   petCharacter: string
-  /** Character size as a percentage of the default sprite size. */
+  /** Character size as a percentage of the default sprite size (60 - 140). */
   petSize: number
+  /** Whether the companion window stays pinned on top of all desktop windows. */
+  petAlwaysOnTop: boolean
+  /** Opacity of the companion window (50 - 100). */
+  petOpacity: number
+  /** Whether mouse clicks pass through the companion window to windows underneath. */
+  petClickThrough: boolean
+  /** Whether global shortcut (Alt+Space) brings DSH to focus. */
+  globalShortcutEnabled: boolean
+  /** Whether notification sounds play on interactions and completions. */
+  soundEnabled: boolean
+  /** Notification sound volume percentage (0 - 100). */
+  soundVolume: number
+  /** Whether screen capture tool is authorized/enabled. */
+  screenCaptureEnabled: boolean
 }
 
 export const DEFAULT_SETTINGS: DesktopSettings = {
-  petEnabled: false,
+  petEnabled: true,
   petCharacter: 'robot',
   petSize: 100,
+  petAlwaysOnTop: true,
+  petOpacity: 100,
+  petClickThrough: false,
+  globalShortcutEnabled: true,
+  soundEnabled: true,
+  soundVolume: 80,
+  screenCaptureEnabled: false,
 }
 
 const STORAGE_KEY = 'dsh.desktop.settings'
@@ -33,11 +54,18 @@ function loadInitialSettings(): DesktopSettings {
     if (!raw) return { ...DEFAULT_SETTINGS }
     const parsed = JSON.parse(raw) as Partial<DesktopSettings>
     const settings: DesktopSettings = {
-      // Visibility is session-scoped: never auto-open a pet merely because it
-      // was visible when the previous desktop run ended.
-      petEnabled: false,
+      // Respect the persisted preference; default to enabled so a fresh
+      // install shows the companion on first run.
+      petEnabled: typeof parsed.petEnabled === 'boolean' ? parsed.petEnabled : DEFAULT_SETTINGS.petEnabled,
       petCharacter: typeof parsed.petCharacter === 'string' ? parsed.petCharacter : DEFAULT_SETTINGS.petCharacter,
       petSize: typeof parsed.petSize === 'number' ? Math.max(60, Math.min(140, parsed.petSize)) : DEFAULT_SETTINGS.petSize,
+      petAlwaysOnTop: typeof parsed.petAlwaysOnTop === 'boolean' ? parsed.petAlwaysOnTop : DEFAULT_SETTINGS.petAlwaysOnTop,
+      petOpacity: typeof parsed.petOpacity === 'number' ? Math.max(50, Math.min(100, parsed.petOpacity)) : DEFAULT_SETTINGS.petOpacity,
+      petClickThrough: typeof parsed.petClickThrough === 'boolean' ? parsed.petClickThrough : DEFAULT_SETTINGS.petClickThrough,
+      globalShortcutEnabled: typeof parsed.globalShortcutEnabled === 'boolean' ? parsed.globalShortcutEnabled : DEFAULT_SETTINGS.globalShortcutEnabled,
+      soundEnabled: typeof parsed.soundEnabled === 'boolean' ? parsed.soundEnabled : DEFAULT_SETTINGS.soundEnabled,
+      soundVolume: typeof parsed.soundVolume === 'number' ? Math.max(0, Math.min(100, parsed.soundVolume)) : DEFAULT_SETTINGS.soundVolume,
+      screenCaptureEnabled: typeof parsed.screenCaptureEnabled === 'boolean' ? parsed.screenCaptureEnabled : DEFAULT_SETTINGS.screenCaptureEnabled,
     }
     // Migrate the retired wooden-fish character to the default companion.
     if (settings.petCharacter === 'woodfish') settings.petCharacter = DEFAULT_SETTINGS.petCharacter
@@ -106,6 +134,13 @@ export function applyDesktopSettingsFromHost(settings: DesktopSettings): void {
     petEnabled: settings.petEnabled === true,
     petCharacter: typeof settings.petCharacter === 'string' ? settings.petCharacter : DEFAULT_SETTINGS.petCharacter,
     petSize: typeof settings.petSize === 'number' ? Math.max(60, Math.min(140, settings.petSize)) : DEFAULT_SETTINGS.petSize,
+    petAlwaysOnTop: typeof settings.petAlwaysOnTop === 'boolean' ? settings.petAlwaysOnTop : DEFAULT_SETTINGS.petAlwaysOnTop,
+    petOpacity: typeof settings.petOpacity === 'number' ? Math.max(50, Math.min(100, settings.petOpacity)) : DEFAULT_SETTINGS.petOpacity,
+    petClickThrough: typeof settings.petClickThrough === 'boolean' ? settings.petClickThrough : DEFAULT_SETTINGS.petClickThrough,
+    globalShortcutEnabled: typeof settings.globalShortcutEnabled === 'boolean' ? settings.globalShortcutEnabled : DEFAULT_SETTINGS.globalShortcutEnabled,
+    soundEnabled: typeof settings.soundEnabled === 'boolean' ? settings.soundEnabled : DEFAULT_SETTINGS.soundEnabled,
+    soundVolume: typeof settings.soundVolume === 'number' ? Math.max(0, Math.min(100, settings.soundVolume)) : DEFAULT_SETTINGS.soundVolume,
+    screenCaptureEnabled: typeof settings.screenCaptureEnabled === 'boolean' ? settings.screenCaptureEnabled : DEFAULT_SETTINGS.screenCaptureEnabled,
   }
   try {
     window.localStorage?.setItem(STORAGE_KEY, JSON.stringify(currentSettings))
@@ -117,3 +152,13 @@ export function applyDesktopSettingsFromHost(settings: DesktopSettings): void {
 export function resetDesktopSettings(): DesktopSettings {
   return updateDesktopSettings(DEFAULT_SETTINGS)
 }
+
+if (typeof window !== 'undefined') {
+  const bridge = (window as unknown as {
+    __DSH_DESKTOP_BRIDGE__?: { onSettingsChanged?: (listener: (settings: DesktopSettings) => void) => void }
+  }).__DSH_DESKTOP_BRIDGE__
+  bridge?.onSettingsChanged?.((hostSettings) => {
+    applyDesktopSettingsFromHost(hostSettings)
+  })
+}
+

@@ -28,29 +28,34 @@ export const AppUpdateSettingsSection: React.FC<{ t: (key: DesktopKey) => string
     return bridge.onUpdateState?.(setState)
   }, [])
 
-  if (!state) {
-    return <div className="dsh_desktop_settingsSection">{t('settings.update.unavailable')}</div>
+  // Always render the section; while the host has not yet reported a state
+  // (e.g. first launch before getUpdateState resolves), fall back to a neutral
+  // idle state so the "check for updates" button stays visible.
+  const current: DesktopUpdateState = state ?? {
+    phase: 'idle',
+    currentVersion: '',
+    message: undefined,
   }
 
-  const buttonLabel = state.phase === 'checking'
+  const buttonLabel = current.phase === 'checking'
     ? t('settings.update.checking')
-    : state.phase === 'downloading'
-      ? `${t('settings.update.downloading')} ${state.percent || 0}%`
-      : state.phase === 'downloaded'
+    : current.phase === 'downloading'
+      ? `${t('settings.update.downloading')} ${current.percent || 0}%`
+      : current.phase === 'downloaded'
         ? t('settings.update.install')
-        : state.phase === 'error'
+        : current.phase === 'error'
           ? t('settings.update.retry')
           : t('settings.update.check')
 
   const handleUpdate = async () => {
     const bridge = getUpdateBridge()
-    if (state.phase === 'downloaded') {
+    if (current.phase === 'downloaded') {
       if (!bridge?.installUpdate) return
       try {
         await bridge.installUpdate()
       } catch (error) {
         setState({
-          ...state,
+          ...current,
           phase: 'error',
           message: error instanceof Error ? error.message : String(error),
         })
@@ -59,12 +64,12 @@ export const AppUpdateSettingsSection: React.FC<{ t: (key: DesktopKey) => string
     }
 
     if (!bridge?.checkForUpdates) {
-      setState({ ...state, phase: 'error', message: t('settings.update.unavailable') })
+      setState({ ...current, phase: 'error', message: t('settings.update.unavailable') })
       return
     }
 
     setState({
-      ...state,
+      ...current,
       phase: 'checking',
       availableVersion: undefined,
       percent: undefined,
@@ -74,7 +79,7 @@ export const AppUpdateSettingsSection: React.FC<{ t: (key: DesktopKey) => string
       setState(await bridge.checkForUpdates())
     } catch (error) {
       setState({
-        ...state,
+        ...current,
         phase: 'error',
         availableVersion: undefined,
         percent: undefined,
@@ -83,9 +88,9 @@ export const AppUpdateSettingsSection: React.FC<{ t: (key: DesktopKey) => string
     }
   }
 
-  const statusMessage = state.phase === 'error'
-    ? `${t('settings.update.failed')}：${state.message || t('settings.update.unavailable')}`
-    : state.message || t('settings.update.hint')
+  const statusMessage = current.phase === 'error'
+    ? `${t('settings.update.failed')}：${current.message || t('settings.update.unavailable')}`
+    : current.message || t('settings.update.hint')
 
   return (
     <div className="dsh_desktop_settingsSection dsh_desktop_petSettings">
@@ -98,14 +103,16 @@ export const AppUpdateSettingsSection: React.FC<{ t: (key: DesktopKey) => string
       <div className="dsh_desktop_settingsCard dsh_desktop_petSizeRow">
         <div>
           <div className="dsh_desktop_settingsLabel">DeepSeek Harness {t('settings.update.desktop')}</div>
-          <div className={`dsh_desktop_settingsDesc${state.phase === 'error' ? ' dsh_desktop_updateError' : ''}`}>
-            {t('settings.update.current')} {state.currentVersion} · {statusMessage}
+          <div className={`dsh_desktop_settingsDesc${current.phase === 'error' ? ' dsh_desktop_updateError' : ''}`}>
+            {current.currentVersion
+              ? `${t('settings.update.current')} ${current.currentVersion} · ${statusMessage}`
+              : statusMessage}
           </div>
         </div>
         <button
           className="dsh_desktop_petFolderButton"
           type="button"
-          disabled={state.phase === 'checking' || state.phase === 'downloading' || state.phase === 'available'}
+          disabled={current.phase === 'checking' || current.phase === 'downloading' || current.phase === 'available'}
           onClick={() => void handleUpdate()}
         >
           {buttonLabel}

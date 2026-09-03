@@ -8,6 +8,8 @@
  */
 import type { SessionId, SessionSummary } from '@deepseek-ai/dsh-client-runtime/client'
 import type { DesktopKey } from './locales.ts'
+import { getDesktopSettings } from './settings/settingsStore.ts'
+import { playNotificationSound } from './sound.ts'
 
 /** The pending-interaction statuses dsh surfaces on a session row. */
 export type DesktopInteractionStatus = 'approval' | 'plan-review' | 'question'
@@ -147,6 +149,11 @@ function fire(
 ): void {
   const title = `${t('nav')} · ${row.displayTitle}`
   const body = t(KIND_TITLE[status])
+
+  const settings = getDesktopSettings()
+  if (settings.soundEnabled) {
+    playNotificationSound(status === 'approval' ? 'alert' : 'notify', settings.soundVolume)
+  }
 
   if (typeof window !== 'undefined' && window.__DSH_DESKTOP_BRIDGE__) {
     try {

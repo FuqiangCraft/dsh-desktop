@@ -125,13 +125,19 @@
       document.body.style.setProperty('--pet-scale', String(Math.max(60, Math.min(140, value)) / 100))
     }
 
+    function setOpacity(value = 100) {
+      document.body.style.opacity = String(Math.max(50, Math.min(100, Number(value))) / 100)
+    }
+
     window.__DSH_SET_PET_CHARACTER__ = setCharacter
     window.__DSH_SET_PET_STATE__ = setState
     window.__DSH_SET_PET_SIZE__ = setSize
+    window.__DSH_SET_PET_OPACITY__ = setOpacity
 
     if (bridge) {
       bridge.onPetCharacter?.(setCharacter)
       bridge.onPetSize?.(setSize)
+      bridge.onPetOpacity?.(setOpacity)
       bridge.onPetState?.(setState)
     }
 

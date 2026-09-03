@@ -17,6 +17,7 @@ use tauri::{
     menu::{ContextMenu, Menu, MenuEvent, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_opener::OpenerExt;
 
@@ -61,9 +62,11 @@ fn save_desktop_settings(
     patch: DesktopSettingsPatch,
 ) -> Result<DesktopSettings, String> {
     let settings = store.save(patch)?;
+    sync_global_shortcut(&app, settings.global_shortcut_enabled);
     if let Err(error) = sync_pet_window(&app, &settings) {
         eprintln!("failed to synchronize pet window: {error}");
     }
+    refresh_tray_menu(&app);
     Ok(settings)
 }
 
@@ -365,6 +368,23 @@ fn open_session(app: &tauri::AppHandle, id: &str) {
     }
 }
 
+fn sync_global_shortcut(app: &tauri::AppHandle, enabled: bool) {
+    if let Ok(shortcut) = "Alt+Space".parse::<Shortcut>() {
+        let global = app.global_shortcut();
+        if enabled {
+            if !global.is_registered(shortcut) {
+                let _ = global.on_shortcut(shortcut, |app, _shortcut, event| {
+                    if event.state() == ShortcutState::Pressed {
+                        show_main_window(app);
+                    }
+                });
+            }
+        } else if global.is_registered(shortcut) {
+            let _ = global.unregister(shortcut);
+        }
+    }
+}
+
 fn sync_pet_window(app: &tauri::AppHandle, settings: &DesktopSettings) -> tauri::Result<()> {
     if !settings.pet_enabled {
         if let Some(window) = app.get_webview_window("pet") {
@@ -378,9 +398,10 @@ fn sync_pet_window(app: &tauri::AppHandle, settings: &DesktopSettings) -> tauri:
     } else {
         let character = serde_json::to_string(&settings.pet_character)?;
         let initialization = format!(
-            "{}\nwindow.__DSH_RUST_SET_PET_CHARACTER__({character});window.__DSH_RUST_SET_PET_SIZE__({});",
+            "{}\nwindow.__DSH_RUST_SET_PET_CHARACTER__({character});window.__DSH_RUST_SET_PET_SIZE__({});window.__DSH_RUST_SET_PET_OPACITY__({});",
             include_str!("pet_bridge.js"),
             settings.pet_size,
+            settings.pet_opacity,
         );
         let mut builder = WebviewWindowBuilder::new(app, "pet", WebviewUrl::App("pet.html".into()))
             .title("")
@@ -388,7 +409,7 @@ fn sync_pet_window(app: &tauri::AppHandle, settings: &DesktopSettings) -> tauri:
             .resizable(false)
             .decorations(false)
             .transparent(true)
-            .always_on_top(true)
+            .always_on_top(settings.pet_always_on_top)
             .skip_taskbar(true)
             .shadow(false)
             .visible(false)
@@ -399,10 +420,49 @@ fn sync_pet_window(app: &tauri::AppHandle, settings: &DesktopSettings) -> tauri:
         builder.build()?
     };
 
+    let _ = window.set_always_on_top(settings.pet_always_on_top);
+    let _ = window.set_ignore_cursor_events(settings.pet_click_through);
     let character = serde_json::to_string(&settings.pet_character)?;
-    window.eval(format!("window.__DSH_RUST_SET_PET_CHARACTER__?.({character});window.__DSH_RUST_SET_PET_SIZE__?.({})", settings.pet_size))?;
+    window.eval(format!(
+        "window.__DSH_RUST_SET_PET_CHARACTER__?.({character});window.__DSH_RUST_SET_PET_SIZE__?.({});window.__DSH_RUST_SET_PET_OPACITY__?.({});",
+        settings.pet_size,
+        settings.pet_opacity,
+    ))?;
     window.show()?;
     Ok(())
+}
+
+fn refresh_tray_menu(app: &tauri::AppHandle) {
+    if let Some(tray) = app.tray_by_id("dsh-tray") {
+        let sessions = app
+            .try_state::<RecentSessions>()
+            .map(|s| s.0.lock().unwrap_or_else(|p| p.into_inner()).clone())
+            .unwrap_or_default();
+        if let Ok(menu) = build_tray_menu(app, &sessions) {
+            let _ = tray.set_menu(Some(menu));
+        }
+    }
+}
+
+fn toggle_pet_visibility(app: &tauri::AppHandle) {
+    if let Some(store) = app.try_state::<DesktopSettingsStore>() {
+        let current = store.get();
+        let next_enabled = !current.pet_enabled;
+        if let Ok(settings) = store.save(DesktopSettingsPatch {
+            pet_enabled: Some(next_enabled),
+            ..Default::default()
+        }) {
+            if let Err(error) = sync_pet_window(app, &settings) {
+                eprintln!("failed to synchronize pet window: {error}");
+            }
+            refresh_tray_menu(app);
+            if let Some(main_win) = app.get_webview_window("dsh") {
+                if let Ok(json) = serde_json::to_string(&settings) {
+                    let _ = main_win.eval(format!("window.__DSH_RUST_SET_SETTINGS__?.({json})"));
+                }
+            }
+        }
+    }
 }
 
 fn build_tray_menu(
@@ -417,6 +477,24 @@ fn build_tray_menu(
         true,
         None::<&str>,
     )?)?;
+
+    let pet_enabled = app
+        .try_state::<DesktopSettingsStore>()
+        .map(|s| s.get().pet_enabled)
+        .unwrap_or(true);
+    let pet_toggle_text = if pet_enabled {
+        "隐藏宠物 (Hide Pet)"
+    } else {
+        "打开宠物 (Show Pet)"
+    };
+    menu.append(&MenuItem::with_id(
+        app,
+        "toggle_pet",
+        pet_toggle_text,
+        true,
+        None::<&str>,
+    )?)?;
+
     if !sessions.is_empty() {
         menu.append(&PredefinedMenuItem::separator(app)?)?;
         for (index, session) in sessions.iter().enumerate() {
@@ -444,6 +522,8 @@ fn create_tray(app: &tauri::App, sessions: &[RecentSession]) -> tauri::Result<()
             let id = event.id().as_ref();
             if id == "open" {
                 show_main_window(app);
+            } else if id == "toggle_pet" {
+                toggle_pet_visibility(app);
             } else if id == "quit" {
                 app.exit(0);
             } else if let Some(index) = id
@@ -563,12 +643,15 @@ mod recovery_tests {
 }
 
 fn create_recovery_window(app: &tauri::App, error: &str) -> tauri::Result<()> {
-    WebviewWindowBuilder::new(app, "dsh", WebviewUrl::App("boot-error.html".into()))
+    let window = WebviewWindowBuilder::new(app, "dsh", WebviewUrl::App("boot-error.html".into()))
         .title("DSH Desktop · 启动恢复")
         .inner_size(820.0, 620.0)
         .min_inner_size(680.0, 520.0)
         .initialization_script(recovery_initialization(error))
         .build()?;
+    if let Some(icon) = app.default_window_icon() {
+        window.set_icon(icon.clone())?;
+    }
     Ok(())
 }
 
@@ -581,6 +664,7 @@ fn main() {
         }))
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(SidecarState(Mutex::new(None)))
         .manage(DesktopSettingsStore::platform_default())
@@ -617,7 +701,11 @@ fn main() {
                 Ok((supervisor, ready)) => {
                     let allowed_url: tauri::Url = ready.origin.parse()?;
                     let window_url = allowed_url.clone();
-                    WebviewWindowBuilder::new(app, "dsh", WebviewUrl::External(window_url))
+                    let window = WebviewWindowBuilder::new(
+                        app,
+                        "dsh",
+                        WebviewUrl::External(window_url),
+                    )
                         .title("")
                         .inner_size(1280.0, 860.0)
                         .min_inner_size(960.0, 640.0)
@@ -625,6 +713,9 @@ fn main() {
                         .initialization_script(include_str!("bridge.js"))
                         .on_navigation(move |target| target.origin() == allowed_url.origin())
                         .build()?;
+                    if let Some(icon) = app.default_window_icon() {
+                        window.set_icon(icon.clone())?;
+                    }
                     *state_lock(app.state::<SidecarState>().inner()) = Some(supervisor);
                 }
                 Err(error) => {
@@ -633,6 +724,11 @@ fn main() {
                 }
             }
             create_tray(app, &[])?;
+            let initial = app.state::<DesktopSettingsStore>().get();
+            sync_global_shortcut(app.handle(), initial.global_shortcut_enabled);
+            if let Err(error) = sync_pet_window(app.handle(), &initial) {
+                eprintln!("failed to initialize pet window: {error}");
+            }
             Ok(())
         })
         .on_menu_event(handle_application_menu_event)

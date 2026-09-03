@@ -105,9 +105,9 @@ localized File, Edit, View, Window and Help entries, and window controls, with
 no visible product title. The injected bar can only request capability-scoped
 Rust commands; popup contents remain native menus and editing actions retain
 native roles. `openApplicationMenu` accepts only the ten known Chinese/English
-top-level labels and clamps popup coordinates before opening a menu. The pet is
-disabled for new profiles and is never restored automatically at application
-startup; it opens only after an explicit in-session setting action.
+top-level labels and clamps popup coordinates before opening a menu. The
+desktop companion pet is enabled by default on new profiles and restores on
+application startup according to persisted user preferences.
 
 ## Development performance baseline
 

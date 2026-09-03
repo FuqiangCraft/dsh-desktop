@@ -102,9 +102,21 @@ export const DesktopSettingsSection: React.FC<DesktopSettingsSectionProps> = ({ 
       <div className="dsh_desktop_petAppearance">
         <div className="dsh_desktop_settingsLabel">外观</div>
         <div className="dsh_desktop_settingsCard dsh_desktop_petSizeRow">
-          <div><div className="dsh_desktop_settingsLabel">宠物大小</div><div className="dsh_desktop_settingsDesc">调整桌面宠物比例大小</div></div>
+          <div>
+            <div className="dsh_desktop_settingsLabel">宠物大小</div>
+            <div className="dsh_desktop_settingsDesc">调整桌面宠物比例大小</div>
+          </div>
           <div className="dsh_desktop_settingsSliderContainer">
-            <input className="dsh_desktop_settingsSlider" aria-label="宠物大小" type="range" min="60" max="140" step="5" value={settings.petSize} onChange={(event) => updateDesktopSettings({ petSize: Number(event.target.value) })} />
+            <input
+              className="dsh_desktop_settingsSlider"
+              aria-label="宠物大小"
+              type="range"
+              min="60"
+              max="140"
+              step="5"
+              value={settings.petSize}
+              onChange={(event) => updateDesktopSettings({ petSize: Number(event.target.value) })}
+            />
             <span className="dsh_desktop_settingsSliderValue">{settings.petSize}%</span>
           </div>
         </div>

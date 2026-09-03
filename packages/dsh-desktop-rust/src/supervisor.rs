@@ -38,9 +38,114 @@ pub struct ReadyHost {
     pub generation: String,
 }
 
+#[cfg(windows)]
+mod windows_job {
+    use std::mem;
+    use std::os::windows::io::RawHandle;
+
+    type HANDLE = *mut std::ffi::c_void;
+    type BOOL = i32;
+    type DWORD = u32;
+
+    const JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE: DWORD = 0x2000;
+    const JOB_OBJECT_EXTENDED_LIMIT_INFORMATION: u32 = 9;
+
+    #[repr(C)]
+    struct JOBOBJECT_BASIC_LIMIT_INFORMATION {
+        per_process_user_time_limit: i64,
+        per_job_user_time_limit: i64,
+        limit_flags: DWORD,
+        minimum_working_set_size: usize,
+        maximum_working_set_size: usize,
+        active_process_limit: DWORD,
+        affinity: usize,
+        priority_class: DWORD,
+        scheduling_class: DWORD,
+    }
+
+    #[repr(C)]
+    struct IO_COUNTERS {
+        read_operation_count: u64,
+        write_operation_count: u64,
+        other_operation_count: u64,
+        read_transfer_count: u64,
+        write_transfer_count: u64,
+        other_transfer_count: u64,
+    }
+
+    #[repr(C)]
+    struct JOBOBJECT_EXTENDED_LIMIT_INFORMATION {
+        basic_limit_information: JOBOBJECT_BASIC_LIMIT_INFORMATION,
+        io_info: IO_COUNTERS,
+        process_memory_limit: usize,
+        job_memory_limit: usize,
+        peak_process_memory_limit: usize,
+        peak_job_memory_limit: usize,
+    }
+
+    unsafe extern "system" {
+        fn CreateJobObjectW(lpJobAttributes: *mut std::ffi::c_void, lpName: *const u16) -> HANDLE;
+        fn SetInformationJobObject(
+            hJob: HANDLE,
+            JobObjectInformationClass: u32,
+            lpJobObjectInformation: *const std::ffi::c_void,
+            cbJobObjectInformationLength: DWORD,
+        ) -> BOOL;
+        fn AssignProcessToJobObject(hJob: HANDLE, hProcess: HANDLE) -> BOOL;
+        fn CloseHandle(hObject: HANDLE) -> BOOL;
+    }
+
+    pub struct JobObject {
+        handle: HANDLE,
+    }
+
+    unsafe impl Send for JobObject {}
+    unsafe impl Sync for JobObject {}
+
+    impl JobObject {
+        pub fn create_kill_on_close() -> Option<Self> {
+            unsafe {
+                let handle = CreateJobObjectW(std::ptr::null_mut(), std::ptr::null());
+                if handle.is_null() {
+                    return None;
+                }
+                let mut info: JOBOBJECT_EXTENDED_LIMIT_INFORMATION = mem::zeroed();
+                info.basic_limit_information.limit_flags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+                let res = SetInformationJobObject(
+                    handle,
+                    JOB_OBJECT_EXTENDED_LIMIT_INFORMATION,
+                    &info as *const _ as *const _,
+                    mem::size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as DWORD,
+                );
+                if res == 0 {
+                    CloseHandle(handle);
+                    return None;
+                }
+                Some(Self { handle })
+            }
+        }
+
+        pub fn assign_process(&self, process_handle: RawHandle) -> bool {
+            unsafe { AssignProcessToJobObject(self.handle, process_handle as HANDLE) != 0 }
+        }
+    }
+
+    impl Drop for JobObject {
+        fn drop(&mut self) {
+            unsafe {
+                if !self.handle.is_null() {
+                    CloseHandle(self.handle);
+                }
+            }
+        }
+    }
+}
+
 pub struct HostSupervisor {
     child: Child,
     stdin: ChildStdin,
+    #[cfg(windows)]
+    _job: Option<windows_job::JobObject>,
 }
 
 impl HostSupervisor {
@@ -63,6 +168,16 @@ impl HostSupervisor {
             command.creation_flags(DETACHED_PROCESS);
         }
         let mut child = command.spawn().map_err(SupervisorError::Spawn)?;
+
+        #[cfg(windows)]
+        let job = {
+            use std::os::windows::io::AsRawHandle;
+            let job = windows_job::JobObject::create_kill_on_close();
+            if let Some(ref j) = job {
+                let _ = j.assign_process(child.as_raw_handle());
+            }
+            job
+        };
 
         let stdin = child.stdin.take().ok_or(SupervisorError::MissingStdin)?;
         let stdout = child.stdout.take().ok_or(SupervisorError::ProtocolClosed)?;
@@ -115,7 +230,15 @@ impl HostSupervisor {
             }
         };
 
-        Ok((Self { child, stdin }, ready))
+        Ok((
+            Self {
+                child,
+                stdin,
+                #[cfg(windows)]
+                _job: job,
+            },
+            ready,
+        ))
     }
 
     pub fn shutdown(mut self, timeout: Duration) -> Result<(), SupervisorError> {
@@ -156,3 +279,18 @@ impl Drop for HostSupervisor {
         }
     }
 }
+
+#[cfg(all(test, windows))]
+mod tests {
+    use super::windows_job::JobObject;
+
+    #[test]
+    fn creates_job_object_with_kill_on_close() {
+        let job = JobObject::create_kill_on_close();
+        assert!(
+            job.is_some(),
+            "Windows Job Object with kill-on-close should create successfully"
+        );
+    }
+}
+
