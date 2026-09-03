@@ -155,6 +155,13 @@ impl HostSupervisor {
         startup_timeout: Duration,
     ) -> Result<(Self, ReadyHost), SupervisorError> {
         let mut command = Command::new(node_binary);
+        if let Some(parent) = sidecar_entry.parent().and_then(|p| p.parent()).and_then(|p| p.parent()) {
+            if parent.exists() {
+                command.current_dir(parent);
+            }
+        } else if let Ok(cwd) = std::env::current_dir() {
+            command.current_dir(cwd);
+        }
         command
             .arg(sidecar_entry)
             .env("DSH_SIDECAR_PROTOCOL", PROTOCOL_VERSION.to_string())
