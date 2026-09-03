@@ -15,7 +15,7 @@ const MANIFEST: &str = r#"{
 }
 "#;
 
-const PATCH: &str = "- id: directory-picker\n  disabled: true\n- insert:\n    - id: directory-picker-browse\n      name: '@deepseek-ai/dsh-host-directory-picker-browse'\n    - id: ui-directory-picker-browse\n      name: '@deepseek-ai/dsh-client-ui-directory-picker-browse'\n";
+const PATCH: &str = "- id: directory-picker\n  disabled: true\n- insert:\n    - id: directory-picker-native\n      name: '@deepseek-ai/dsh-host-directory-picker-native'\n    - id: ui-directory-picker-native\n      name: '@deepseek-ai/dsh-client-ui-directory-picker-native'\n";
 const ROOT_CONFIG: &str = "[]\n";
 
 #[derive(Debug, Clone)]

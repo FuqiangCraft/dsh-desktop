@@ -6,6 +6,9 @@
   window.__DSH_RUST_UPDATE_STATE__ = (state) => {
     for (const listener of updateListeners) listener(state)
   }
+  window.__DSH_RUST_SET_SETTINGS__ = (settings) => {
+    for (const listener of settingsListeners) listener(settings)
+  }
   window.__DSH_DESKTOP_SET_WORKSPACE__ = (path) => {
     for (const listener of workspaceListeners) listener(path)
   }

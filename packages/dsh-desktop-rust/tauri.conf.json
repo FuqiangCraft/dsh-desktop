@@ -29,7 +29,10 @@
     "active": true,
     "createUpdaterArtifacts": true,
     "targets": ["nsis"],
-    "icon": ["../../assets/branding/icon.ico"],
+    "icon": [
+      "../../assets/branding/icon.png",
+      "../../assets/branding/icon.ico"
+    ],
     "resources": {
       "../../.tauri-runtime/": "runtime/"
     },

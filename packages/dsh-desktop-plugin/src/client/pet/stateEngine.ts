@@ -5,6 +5,7 @@
 import type { DesktopKey } from '../locales.ts'
 import type { SessionsListFace, DesktopInteractionStatus } from '../notifier.ts'
 import { getDesktopSettings } from '../settings/settingsStore.ts'
+import { playNotificationSound } from '../sound.ts'
 
 export type PetLiveState = 'idle' | 'thinking' | 'working' | 'alert' | 'success'
 
@@ -67,6 +68,10 @@ export function setupPetStateEngine(sessions: SessionsListFace, t: T): () => voi
         // Just transitioned from running to stopped -> show success celebration
         nextState = 'success'
         statusText = t('canvas.status.done')
+        const settings = getDesktopSettings()
+        if (settings.soundEnabled) {
+          playNotificationSound('complete', settings.soundVolume)
+        }
         if (successTimer) clearTimeout(successTimer)
         successTimer = setTimeout(() => {
           previousState = 'idle'

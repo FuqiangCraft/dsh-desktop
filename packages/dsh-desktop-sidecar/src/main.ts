@@ -30,6 +30,41 @@ function emit(event: Record<string, unknown>): void {
   process.stdout.write(`${JSON.stringify({ ...event, protocol: PROTOCOL })}\n`)
 }
 
+// Canonical desktop profile patch. It disables the in-app directory picker and
+// mounts the OS-native backend (real folder dialog, drive-root enumeration on
+// Windows), so "add workspace" behaves like the File menu's "open workspace".
+// Keep in sync with DesktopProfile::PATCH in
+// packages/dsh-desktop-rust/src/profile.rs.
+const DESKTOP_PROFILE_PATCH = `- id: directory-picker\n  disabled: true\n- insert:\n    - id: directory-picker-native\n      name: '@deepseek-ai/dsh-host-directory-picker-native'\n    - id: ui-directory-picker-native\n      name: '@deepseek-ai/dsh-client-ui-directory-picker-native'\n`
+
+function healDesktopPluginFallback(homeDir: string): void {
+  try {
+    const pluginPkg = require.resolve('@mixian/dsh-desktop-plugin/package.json')
+    const targetDir = path.dirname(pluginPkg)
+    const linkDir = path.join(homeDir, 'profiles', 'node_modules', '@mixian', 'dsh-desktop-plugin')
+    fs.mkdirSync(path.dirname(linkDir), { recursive: true })
+    if (fs.existsSync(linkDir) || fs.lstatSync(linkDir, { throwIfNoEntry: false })) {
+      try {
+        if (fs.readlinkSync(linkDir) === targetDir) return
+      } catch {
+        // Not a link or readlink failed; remove it to re-create
+      }
+      try {
+        fs.unlinkSync(linkDir)
+      } catch {
+        try {
+          fs.rmdirSync(linkDir)
+        } catch {
+          // ignore cleanup errors
+        }
+      }
+    }
+    fs.symlinkSync(targetDir, linkDir, 'junction')
+  } catch (error) {
+    console.error('Failed to heal @mixian/dsh-desktop-plugin fallback link:', error)
+  }
+}
+
 function ensureProfile(homeDir: string, installAnchor: string): string {
   const profileDir = path.join(homeDir, 'profiles', PROFILE)
   fs.mkdirSync(profileDir, { recursive: true })
@@ -52,11 +87,14 @@ function ensureProfile(homeDir: string, installAnchor: string): string {
       },
     }, null, 2)}\n`)
   }
+  // Written once for fresh installs; upgrading pre-existing profiles is out
+  // of scope (they can reset the profile to pick up the canonical patch).
   if (!fs.existsSync(patchPath)) {
-    fs.writeFileSync(patchPath, `- id: directory-picker\n  disabled: true\n- insert:\n    - id: directory-picker-browse\n      name: '@deepseek-ai/dsh-host-directory-picker-browse'\n    - id: ui-directory-picker-browse\n      name: '@deepseek-ai/dsh-client-ui-directory-picker-browse'\n`)
+    fs.writeFileSync(patchPath, DESKTOP_PROFILE_PATCH)
   }
   fs.writeFileSync(rootPath, '[]\n')
   healProfilesModuleFallback(installAnchor, homeDir)
+  healDesktopPluginFallback(homeDir)
   return rootPath
 }
 

@@ -72,6 +72,12 @@ const requiredPackages = [
   '@deepseek-ai/dsh',
   '@deepseek-ai/dsh-app-boot',
   '@deepseek-ai/dsh-base',
+  // The desktop profile patch (profile.rs / sidecar main.ts) mounts these by
+  // name; they arrive transitively through @deepseek-ai/dsh-web-app today, but
+  // assert them explicitly so a fresh install never ships without the plugin
+  // that backs the "add workspace" native dialog.
+  '@deepseek-ai/dsh-client-ui-directory-picker-native',
+  '@deepseek-ai/dsh-host-directory-picker-native',
   '@deepseek-ai/dsh-web-app',
   '@mixian/dsh-desktop-plugin',
 ]

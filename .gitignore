@@ -12,6 +12,7 @@ packages/*/dist/
 dist-electron/
 dist-electron*/
 .tmp*
+_tmp*
 *.tgz
 
 # Packaging output and recovery/diagnostic residues
