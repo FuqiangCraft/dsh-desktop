@@ -25,7 +25,11 @@ import { AppUpdateSettingsSection } from './settings/AppUpdateSettingsSection.ts
 import { setupPetNavIcon } from './settings/petNavIcon.ts'
 import { applyDesktopSettingsFromHost } from './settings/settingsStore.ts'
 import { adoptStyles } from './styles.ts'
-import { adoptNativeWorkspace, installNativeWorkspacePickerInterceptor } from './workspacePicker.ts'
+import {
+  adoptNativeWorkspace,
+  installNativeWorkspacePickerInterceptor,
+  installWebDirectoryPickerFallbackSuppressor,
+} from './workspacePicker.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -122,6 +126,10 @@ export function apply(ctx: ClientContext): void {
     ctx.effect(
       () => installNativeWorkspacePickerInterceptor(window, () => desktopBridge.selectWorkspaceFolder!()),
       'dsh-desktop-plugin: native workspace click interceptor',
+    )
+    ctx.effect(
+      () => installWebDirectoryPickerFallbackSuppressor(() => desktopBridge.selectWorkspaceFolder!()),
+      'dsh-desktop-plugin: native workspace browse fallback suppressor',
     )
   }
 

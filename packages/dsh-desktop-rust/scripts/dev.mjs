@@ -1,11 +1,15 @@
 import { spawn } from 'node:child_process'
+import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const workspaceRoot = path.resolve(packageRoot, '..', '..')
-const sidecarEntry = path.join(workspaceRoot, 'packages', 'dsh-desktop-sidecar', 'dist', 'main.mjs')
+const runtimeSidecar = path.join(workspaceRoot, '.tauri-runtime', 'sidecar.mjs')
+const sidecarEntry = fs.existsSync(runtimeSidecar)
+  ? runtimeSidecar
+  : path.join(workspaceRoot, 'packages', 'dsh-desktop-sidecar', 'dist', 'main.mjs')
 const developmentTarget = path.join(workspaceRoot, 'target', 'dev')
 const useBundledCorepack = process.platform === 'win32'
 const executable = useBundledCorepack ? process.execPath : 'pnpm'
