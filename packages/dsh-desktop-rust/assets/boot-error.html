@@ -19,6 +19,16 @@
     button.danger { color: #b42318; }
     button:disabled { opacity: .55; cursor: wait; }
     #status { min-height: 24px; margin-top: 16px; font-size: 13px; color: #59677a; }
+    @media (prefers-color-scheme: dark) {
+      :root { background: #0b0f19; color: #f1f5f9; }
+      body { background: radial-gradient(circle at top, #1e293b 0, #0f172a 58%, #020617 100%); }
+      main { background: rgba(15, 23, 42, .92); border-color: rgba(255, 255, 255, .1); box-shadow: 0 22px 70px rgba(0, 0, 0, .45); }
+      p, #status { color: #94a3b8; }
+      button { background: #1e293b; color: #f1f5f9; border-color: rgba(255, 255, 255, .15); }
+      button:hover:not(:disabled) { background: #334155; }
+      button.primary { background: #2563eb; color: #fff; border-color: #3b82f6; }
+      button.danger { color: #f87171; }
+    }
   </style>
 </head>
 <body>

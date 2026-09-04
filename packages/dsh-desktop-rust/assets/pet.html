@@ -78,6 +78,10 @@
     @keyframes wake{0%{transform:scaleY(1)}40%{transform:scaleY(1.14)}70%{transform:scaleY(.95)}100%{transform:scaleY(1)}}
     @keyframes spinDizzy{0%{transform:perspective(400px) rotateY(0deg) rotate(0deg) translateX(0)}20%{transform:perspective(400px) rotateY(360deg) rotate(0deg) translateX(0)}40%{transform:perspective(400px) rotateY(360deg) rotate(-6deg) translateX(-4px)}55%{transform:perspective(400px) rotateY(360deg) rotate(-4deg) translateX(4px)}70%{transform:perspective(400px) rotateY(360deg) rotate(6deg) translateX(-3px)}85%{transform:perspective(400px) rotateY(360deg) rotate(-6deg) translateX(3px)}100%{transform:perspective(400px) rotateY(360deg) rotate(0deg) translateX(0)}}
     @keyframes petReact{0%,100%{transform:rotate(0) scale(1)}35%{transform:rotate(-7deg) scale(.96)}65%{transform:rotate(5deg) scale(1.07)}}
+    @media(prefers-color-scheme:dark){
+      .status{background:rgba(22,27,34,.94);color:#f0f6fc;border-color:rgba(240,246,252,.15);box-shadow:0 8px 24px rgba(0,0,0,.45)}
+      .status:after{border-right-color:rgba(240,246,252,.15);border-bottom-color:rgba(240,246,252,.15)}
+    }
     @media(prefers-reduced-motion:reduce){.companion{animation:none!important}}
   </style>
 </head>

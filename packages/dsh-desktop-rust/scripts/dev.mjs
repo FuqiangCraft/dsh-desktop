@@ -13,9 +13,13 @@ const commandArgs = useBundledCorepack
   ? [path.join(path.dirname(process.execPath), 'node_modules', 'corepack', 'dist', 'pnpm.js')]
   : []
 
+const targetArgs = process.platform === 'win32'
+  ? ['--target', process.env.TAURI_TARGET || 'x86_64-pc-windows-gnu']
+  : []
+
 const child = spawn(
   executable,
-  [...commandArgs, 'exec', 'tauri', 'dev', '--config', 'packages/dsh-desktop-rust/tauri.conf.json', '--features', 'tauri-shell'],
+  [...commandArgs, 'exec', 'tauri', 'dev', '--config', 'packages/dsh-desktop-rust/tauri.conf.json', '--features', 'tauri-shell', ...targetArgs],
   {
     cwd: workspaceRoot,
     env: {

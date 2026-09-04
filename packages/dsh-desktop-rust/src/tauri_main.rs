@@ -1,4 +1,4 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![windows_subsystem = "windows"]
 
 use std::{
     env,
@@ -310,7 +310,9 @@ fn show_main_window(app: &tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("dsh") {
         let _ = window.show();
         let _ = window.unminimize();
+        let _ = window.set_always_on_top(true);
         let _ = window.set_focus();
+        let _ = window.set_always_on_top(false);
     }
 }
 
@@ -512,6 +514,10 @@ fn build_tray_menu(
     Ok(menu)
 }
 
+fn app_highres_icon(_app: &tauri::App) -> Option<tauri::image::Image<'static>> {
+    Some(tauri::include_image!("../../assets/branding/icon.png"))
+}
+
 fn create_tray(app: &tauri::App, sessions: &[RecentSession]) -> tauri::Result<()> {
     let menu = build_tray_menu(app.handle(), sessions)?;
     let mut builder = TrayIconBuilder::with_id("dsh-tray")
@@ -555,8 +561,8 @@ fn create_tray(app: &tauri::App, sessions: &[RecentSession]) -> tauri::Result<()
                 show_main_window(tray.app_handle());
             }
         });
-    if let Some(icon) = app.default_window_icon() {
-        builder = builder.icon(icon.clone());
+    if let Some(icon) = app_highres_icon(app) {
+        builder = builder.icon(icon);
     }
     builder.build(app)?;
     Ok(())
@@ -566,11 +572,37 @@ fn runtime_paths(app: &tauri::App) -> tauri::Result<(PathBuf, PathBuf)> {
     if cfg!(debug_assertions) {
         let node_override = env::var_os("DSH_NODE_BINARY").map(PathBuf::from);
         let sidecar_override = env::var_os("DSH_SIDECAR_ENTRY").map(PathBuf::from);
-        return Ok((
-            node_override.unwrap_or_else(|| PathBuf::from("node")),
-            sidecar_override
-                .unwrap_or_else(|| PathBuf::from("packages/dsh-desktop-sidecar/dist/main.mjs")),
-        ));
+        let node_bin = node_override.unwrap_or_else(|| PathBuf::from("node"));
+        let sidecar = if let Some(entry) = sidecar_override {
+            if entry.is_relative() {
+                env::current_dir().map(|c| c.join(&entry)).unwrap_or(entry)
+            } else {
+                entry
+            }
+        } else {
+            let mut resolved = None;
+            if let Ok(cwd) = env::current_dir() {
+                let candidate = cwd.join("packages").join("dsh-desktop-sidecar").join("dist").join("main.mjs");
+                if candidate.is_file() {
+                    resolved = Some(candidate);
+                }
+            }
+            if resolved.is_none() {
+                if let Ok(exe) = env::current_exe() {
+                    let mut dir = exe.parent();
+                    while let Some(parent) = dir {
+                        let candidate = parent.join("packages").join("dsh-desktop-sidecar").join("dist").join("main.mjs");
+                        if candidate.is_file() {
+                            resolved = Some(candidate);
+                            break;
+                        }
+                        dir = parent.parent();
+                    }
+                }
+            }
+            resolved.unwrap_or_else(|| PathBuf::from("packages/dsh-desktop-sidecar/dist/main.mjs"))
+        };
+        return Ok((node_bin, sidecar));
     }
     let resource_dir = app.path().resource_dir()?;
     #[cfg(windows)]
@@ -649,8 +681,8 @@ fn create_recovery_window(app: &tauri::App, error: &str) -> tauri::Result<()> {
         .min_inner_size(680.0, 520.0)
         .initialization_script(recovery_initialization(error))
         .build()?;
-    if let Some(icon) = app.default_window_icon() {
-        window.set_icon(icon.clone())?;
+    if let Some(icon) = app_highres_icon(app) {
+        window.set_icon(icon)?;
     }
     Ok(())
 }
@@ -706,16 +738,21 @@ fn main() {
                         "dsh",
                         WebviewUrl::External(window_url),
                     )
-                        .title("")
+                        .title("DeepSeek Harness")
                         .inner_size(1280.0, 860.0)
                         .min_inner_size(960.0, 640.0)
+                        .center()
+                        .visible(true)
                         .decorations(false)
                         .initialization_script(include_str!("bridge.js"))
                         .on_navigation(move |target| target.origin() == allowed_url.origin())
                         .build()?;
-                    if let Some(icon) = app.default_window_icon() {
-                        window.set_icon(icon.clone())?;
+                    if let Some(icon) = app_highres_icon(app) {
+                        window.set_icon(icon)?;
                     }
+                    let _ = window.show();
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
                     *state_lock(app.state::<SidecarState>().inner()) = Some(supervisor);
                 }
                 Err(error) => {
