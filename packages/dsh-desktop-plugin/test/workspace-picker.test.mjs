@@ -43,6 +43,27 @@ test('intercepts the add-workspace control for the native folder dialog', () => 
     dataAction: 'add-workspace',
     className: '',
   }), true)
+  assert.equal(isWorkspacePickerDescriptor({
+    ariaLabel: '选择工作区',
+    title: '',
+    text: '选择工作区',
+    dataAction: null,
+    className: '',
+  }), true)
+  assert.equal(isWorkspacePickerDescriptor({
+    ariaLabel: 'Choose workspace',
+    title: '',
+    text: 'Choose workspace',
+    dataAction: null,
+    className: '',
+  }), true)
+  assert.equal(isWorkspacePickerDescriptor({
+    ariaLabel: '选择工作区',
+    title: '',
+    text: '',
+    dataAction: null,
+    className: '',
+  }), true)
 })
 
 test('finds the add-workspace menu item when the click lands on its icon', () => {
