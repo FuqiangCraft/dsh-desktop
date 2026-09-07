@@ -20,7 +20,6 @@ import { en, zh, type DesktopKey } from './locales.ts'
 import { MultiAgentCanvas, type CanvasInjected } from './MultiAgentCanvas.tsx'
 import { setupNotificationWatcher, setupTraySessionSync, type SessionsListFace } from './notifier.ts'
 import { setupPetStateEngine } from './pet/stateEngine.ts'
-import { DesktopSettingsSection } from './settings/DesktopSettingsSection.tsx'
 import { AppUpdateSettingsSection } from './settings/AppUpdateSettingsSection.tsx'
 import { setupPetNavIcon } from './settings/petNavIcon.ts'
 import { applyDesktopSettingsFromHost } from './settings/settingsStore.ts'
@@ -44,8 +43,6 @@ const NS = 'desktop'
 /** The `conversation.view` tab id and the matching view-builder target. */
 const CANVAS_VIEW = 'canvas'
 
-/** The `settings.section` entry id for desktop & companion settings. */
-const SETTINGS_SECTION_ID = 'desktop-companion'
 const UPDATE_SETTINGS_SECTION_ID = 'desktop-update'
 
 /** Required services: the sessions store, slot registry, locale, and view registry. */
@@ -152,18 +149,18 @@ export function apply(ctx: ClientContext): void {
     MultiAgentCanvas,
   ))
 
-  // Native Settings Integration: Register Desktop & Pet Companion settings section
-  ctx.slots.inject('settings.section', () => ctx.slots.register(
-    {
-      name: 'settings.section',
-      id: SETTINGS_SECTION_ID,
-      order: 30,
-      locale: NS,
-      label: () => t('settings.title'),
-      inject: () => ({ t }),
-    },
-    DesktopSettingsSection,
-  ))
+  // Native Settings Integration: Pet companion settings is hidden for now as it has no practical utility
+  // ctx.slots.inject('settings.section', () => ctx.slots.register(
+  //   {
+  //     name: 'settings.section',
+  //     id: SETTINGS_SECTION_ID,
+  //     order: 30,
+  //     locale: NS,
+  //     label: () => t('settings.title'),
+  //     inject: () => ({ t }),
+  //   },
+  //   DesktopSettingsSection,
+  // ))
 
   ctx.slots.inject('settings.section', () => ctx.slots.register(
     {

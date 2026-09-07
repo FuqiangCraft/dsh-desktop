@@ -47,7 +47,7 @@ fn default_volume() -> u8 {
 impl Default for DesktopSettings {
     fn default() -> Self {
         Self {
-            pet_enabled: true,
+            pet_enabled: false,
             pet_character: "robot".to_owned(),
             pet_size: 100,
             pet_always_on_top: true,
@@ -333,10 +333,10 @@ mod tests {
     }
 
     #[test]
-    fn desktop_pet_is_enabled_by_default() {
-        assert!(DesktopSettings::default().pet_enabled);
+    fn desktop_pet_is_disabled_by_default() {
+        assert!(!DesktopSettings::default().pet_enabled);
         assert!(
-            DesktopSettingsStore::new(test_root("default"))
+            !DesktopSettingsStore::new(test_root("default"))
                 .get()
                 .pet_enabled
         );
